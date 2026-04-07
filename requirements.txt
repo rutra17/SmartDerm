@@ -1,1 +1,7 @@
-Colocaremos aqui o que necessáriamente precisa ser instalado
+torch
+torchvision
+streamlit
+pandas
+numpy
+opencv-python
+pillow
