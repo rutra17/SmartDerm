@@ -1,0 +1,1 @@
+│   └── storage/    # upload para bucket do Supabase/Firebase

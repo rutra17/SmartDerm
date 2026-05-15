@@ -1,0 +1,1 @@
+├── contexts/       # Estados globais (Auth, ChatState)

@@ -1,0 +1,1 @@
+├── config/# Inicialização do Supabase/Firebase - Conexão com banco de dados BackEnd

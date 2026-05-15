@@ -1,0 +1,1 @@
+Funções auxiliares (formatar data, validar tamanho de imagem)
