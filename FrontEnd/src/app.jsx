@@ -68,7 +68,6 @@ function App() {
 const handleSend = async (e, previewUrl = null) => {
         e.preventDefault();
         
-        // Impede envio vazio se não tiver texto nem imagem
         if (!input.trim() && !previewUrl) return;
         
         const textToSend = input.trim() ? input : "Imagem enviada para triagem.";
@@ -80,53 +79,83 @@ const handleSend = async (e, previewUrl = null) => {
 
         let urlFinalDaImagem = null;
 
-        // Faz o upload da imagem real para o Storage do Supabase
         if (imageFile) {
             const fileExt = imageFile.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
+            // 1. Faz o upload da imagem para o Storage do Supabase
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('imagens-medicas')
                 .upload(fileName, imageFile);
 
             if (!uploadError) {
-                // Pega a URL pública da imagem que acabou de subir no Supabase
                 const { data: publicUrlData } = supabase.storage
                     .from('imagens-medicas')
                     .getPublicUrl(fileName);
                 
                 urlFinalDaImagem = publicUrlData.publicUrl;
 
-                // --- CONEXÃO COM O BACK-END AQUI ---
+                // 2. Salva a mensagem do USUÁRIO no Supabase
+                if (consultaId) {
+                    await supabase.from('mensagens').insert([{
+                        consulta_id: consultaId,
+                        role: 'user',
+                        texto: textToSend,
+                        imagem_url: urlFinalDaImagem 
+                    }]);
+                }
+
+                // 3. Envia para o Back-End processar na IA Real
                 try {
                     console.log("Enviando imagem para a API local (Back-End)...");
-                    // Chama a função do api.js enviando o arquivo físico da imagem
                     const respostaBackend = await uploadImageToBackend(imageFile);
-                    console.log("Resposta do Back-End:", respostaBackend);
+                    
+                    // Pega o texto real gerado pelo Gemini
+                    const textoRealDaIA = respostaBackend.resultadoIA;
+
+                    // Mostra a resposta da IA na tela do Chat
+                    const aiMsg = { id: Date.now(), role: 'assistant', text: textoRealDaIA, image: null };
+                    setMessages(prev => [...prev, aiMsg]);
+                    setLoading(false); // Desliga a animação
+
+                    // 4. Salva a resposta REAL da IA no Supabase
+                    if (consultaId) {
+                        await supabase.from('mensagens').insert([{
+                            consulta_id: consultaId,
+                            role: 'assistant',
+                            texto: textoRealDaIA,
+                            ia_utilizada: selectedAI, // Salva qual IA fez a análise (ex: gemini)
+                            prompt_utilizado: selectedPrompt 
+                        }]);
+                    }
+
                 } catch (err) {
-                    console.error("Falha ao enviar para o Back-End:", err);
+                    console.error("Falha ao processar na IA:", err);
+                    setLoading(false);
                 }
-                // -----------------------------------
 
             } else {
                 console.error("Erro no upload da imagem para o Supabase:", uploadError);
+                setLoading(false);
             }
+        } else {
+            // Se o usuário enviar apenas texto (sem imagem)
+            if (consultaId) {
+                await supabase.from('mensagens').insert([{
+                    consulta_id: consultaId,
+                    role: 'user',
+                    texto: textToSend,
+                    imagem_url: null 
+                }]);
+            }
+            
+            // Retorna um aviso na tela
+            const avisoMsg = { id: Date.now(), role: 'assistant', text: "Para realizar a triagem, por favor, anexe uma imagem da lesão.", image: null };
+            setMessages(prev => [...prev, avisoMsg]);
+            setLoading(false);
         }
         
-        setImageFile(null); // Limpa o arquivo selecionado da memória
-
-        // Salva a mensagem no banco de dados (Supabase) usando a URL real da nuvem
-        if (consultaId) {
-            await supabase.from('mensagens').insert([{
-                consulta_id: consultaId,
-                role: 'user',
-                texto: textToSend,
-                imagem_url: urlFinalDaImagem 
-            }]);
-        }
-
-        // Chama a IA (Por enquanto, a simulação. Em breve, a IA real)
-        simulateResponse(textToSend, urlFinalDaImagem, consultaId);
+        setImageFile(null); // Limpa o estado da imagem
     };
 
     // NOVO: Função atualizada para guardar o arquivo real no estado

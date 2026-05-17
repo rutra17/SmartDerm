@@ -26,8 +26,8 @@ export default function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, 
                     >
                         <option value="padrao">Padrão Médico</option>
                         <option value="qualidade_alta">Teste: Alta Qualidade</option>
-                        <option value="qualidade_alta">Teste: Media Qualidade</option>
-                        <option value="qualidade_alta">Teste: Baixa Qualidade</option>
+                        <option value="qualidade_media">Teste: Media Qualidade</option>
+                        <option value="qualidade_baixo">Teste: Baixa Qualidade</option>
                         <option value="sem_info">Teste: Sem Informaação</option>
                     </select>
                 </div>
