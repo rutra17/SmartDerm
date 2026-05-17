@@ -1,0 +1,1 @@
+└── services/       # Regra de negócio (orquestra banco + providers)

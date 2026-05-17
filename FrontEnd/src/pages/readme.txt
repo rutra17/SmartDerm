@@ -1,0 +1,1 @@
+├── pages/          # Chat.jsx, Dashboard.jsx, Login.jsx

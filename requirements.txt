@@ -1,7 +1,0 @@
-torch
-torchvision
-streamlit
-pandas
-numpy
-opencv-python
-pillow

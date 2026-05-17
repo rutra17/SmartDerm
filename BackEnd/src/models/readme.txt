@@ -1,0 +1,1 @@
+├── models/         # Esquemas de dados (usuários, laudos, histórico)
