@@ -16,7 +16,7 @@ export const uploadImage = async (req, res) => {
 
         console.log("📸 Imagem recebida no servidor:", fileInfo.nome);
 
-        // 2. Define a instrução (prompt) que a IA vai seguir
+        // 2. Define o prompt que a IA vai seguir
         const promptPadrao = "Você é um assistente especializado em dermatologia. Analise esta imagem de uma lesão na pele e descreva as características visíveis (Assimetria, Bordas, Cor e Diâmetro). Termine a mensagem lembrando que isso é apenas uma triagem e o paciente deve consultar um médico.";
 
         // 3. Envia a imagem (que está na memória RAM/buffer) para o serviço do Gemini

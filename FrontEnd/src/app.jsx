@@ -166,9 +166,7 @@ function App() {
                     imagem_url: urlFinalDaImagem 
                 }]);
 
-                // ====================================================================
                 // 3. O INTERRUPTOR INTELIGENTE (Gerencia a IA Real vs Simulação)
-                // ====================================================================
                 try {
                     let textoFinalRespostaIA = "";
 
