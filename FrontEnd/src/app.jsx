@@ -1,304 +1,170 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import Sidebar from './components/Sidebar';
-import ChatHeader from './components/ChatHeader';
-import ChatMessage from './components/ChatMessage';
-import ChatInput from './components/ChatInput';
-import SkeletonLoader from './components/SkeletonLoader';
+import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
+
+// IMPORTANTE: Importando a conexão com o banco de dados para o Login
 import { supabase } from './services/supabase';
-import { uploadImageToBackend } from './services/api';
 
-function App() {
-    const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState('');
+// Importando as 4 páginas
+import PatientChat from './pages/PatientChat';
+import DoctorPanel from './pages/DoctorPanel';
+import ScientistDashboard from './pages/ScientistDashboard';
+import Register from './pages/Register';
+
+// A Página Inicial com Formulários de Login
+function HomeGateway() {
+    const navigate = useNavigate();
+    
+    // Estados do formulário
+    const [loginType, setLoginType] = useState(null); 
+    const [identificador, setIdentificador] = useState('');
+    const [senha, setSenha] = useState('');
+    
+    // Novo estado para o botão mostrar que está carregando
     const [loading, setLoading] = useState(false);
-    
-    const [selectedAI, setSelectedAI] = useState('gemini');
-    const [selectedPrompt, setSelectedPrompt] = useState('padrao');
-    const [consultaId, setConsultaId] = useState(null); 
-    const [imageFile, setImageFile] = useState(null); 
-    
-    // NOVOS ESTADOS PARA O HISTÓRICO E MODAL
-    const [history, setHistory] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [patientName, setPatientName] = useState('');
 
-    const scrollRef = useRef(null);
-    const fileRef = useRef(null);
-
-    // Rola para o final automaticamente
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages, loading]);
-
-    // Carrega o histórico de consultas ao abrir a aplicação
-    useEffect(() => {
-        carregarHistorico();
-    }, []);
-
-    const carregarHistorico = async () => {
-        console.log("📡 Buscando histórico no Supabase...");
-        
-        // Removemos o .order('created_at') para testar se o erro era a coluna inexistente
-        const { data, error } = await supabase
-            .from('consultas')
-            .select('*');
-
-        if (error) {
-            console.error("❌ Erro ao buscar histórico:", error);
-        }
-
-        if (data) {
-            console.log("✅ Histórico encontrado:", data);
-            
-            // Inverte a ordem no próprio JavaScript para o mais recente ficar no topo
-            const historicoInvertido = data.reverse(); 
-            setHistory(historicoInvertido);
-        }
-    };
-
-    // Função para criar a nova consulta via Modal
-    const iniciarNovaConsulta = async (e) => {
-        e.preventDefault();
-        if (!patientName.trim()) return;
-
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('consultas')
-            .insert([{ nome_paciente: patientName }])
-            .select()
-            .single();
-
-        if (!error) {
-            setConsultaId(data.id);
-            setMessages([
-                { id: Date.now(), role: 'assistant', text: `Nova triagem iniciada para o paciente **${patientName}**. Por favor, anexe a imagem da lesão.`, image: null }
-            ]);
-            setPatientName('');
-            setIsModalOpen(false); // Fecha o modal
-            carregarHistorico(); // Atualiza a barra lateral
-        }
-        setLoading(false);
-    };
-
-    // Função para carregar uma conversa antiga ao clicar na barra lateral
-    const selecionarConsultaAntiga = async (id) => {
-        console.log(`📡 Buscando mensagens para a consulta ID: ${id}...`);
-        
-        setConsultaId(id);
-        setMessages([]); // Limpa a tela atual
-        setLoading(true); // Mostra o carregamento
-
-        // Removemos o .order('created_at') pelo mesmo motivo da barra lateral
-        const { data, error } = await supabase
-            .from('mensagens')
-            .select('*')
-            .eq('consulta_id', id);
-
-        if (error) {
-            console.error("❌ Erro ao buscar as mensagens do chat:", error);
-            setLoading(false);
-            return;
-        }
-
-        if (data) {
-            console.log("✅ Mensagens encontradas no banco:", data);
-            
-            // Ordenamos diretamente no JavaScript (garantindo que a mais antiga fique no topo)
-            // Se o ID for um número sequencial, isso garante a ordem correta da conversa
-            const mensagensOrdenadas = data.sort((a, b) => a.id - b.id);
-
-            // Formata os dados brutos do banco para o padrão visual que o React espera
-            const mensagensFormatadas = mensagensOrdenadas.map(msg => ({
-                id: msg.id,
-                role: msg.role,
-                text: msg.texto,
-                image: msg.imagem_url
-            }));
-            
-            setMessages(mensagensFormatadas);
-        }
-        setLoading(false);
-    };
-
-    const handleSend = async (e, previewUrl = null) => {
+    // FUNÇÃO DE LOGIN ATUALIZADA COM O SUPABASE
+    const handleLogin = async (e) => {
         e.preventDefault();
         
-        if (!input.trim() && !previewUrl) return;
-        
-        if (!consultaId) {
-            alert("Por favor, inicie uma nova consulta primeiro!");
-            return;
-        }
-        
-        const textToSend = input.trim() ? input : "Imagem enviada para triagem.";
-        const newMsg = { id: Date.now(), role: 'user', text: textToSend, image: previewUrl };
-        
-        setMessages(prev => [...prev, newMsg]);
-        setInput('');
-        setLoading(true);
+        if (identificador && senha) {
+            setLoading(true);
 
-        let urlFinalDaImagem = null;
+            if (loginType === 'paciente') {
+                // 1. Refaz o truque do e-mail falso usando o CPF digitado
+                const cpfNumeros = identificador.replace(/\D/g, ''); 
+                const emailFalso = `${cpfNumeros}@paciente.smartderm.com`;
 
-        if (imageFile) {
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                // 2. Pergunta ao Supabase se a senha está correta
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: emailFalso,
+                    password: senha,
+                });
 
-            // 1. Faz o upload físico da foto para o Storage do Supabase
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('imagens-medicas')
-                .upload(fileName, imageFile);
-
-            if (!uploadError) {
-                const { data: publicUrlData } = supabase.storage
-                    .from('imagens-medicas')
-                    .getPublicUrl(fileName);
-                
-                urlFinalDaImagem = publicUrlData.publicUrl;
-
-                // 2. Grava o texto e o link da imagem do USUÁRIO no banco de dados
-                await supabase.from('mensagens').insert([{
-                    consulta_id: consultaId,
-                    role: 'user',
-                    texto: textToSend,
-                    imagem_url: urlFinalDaImagem 
-                }]);
-
-                // 3. O INTERRUPTOR INTELIGENTE (Gerencia a IA Real vs Simulação)
-                try {
-                    let textoFinalRespostaIA = "";
-
-                    if (selectedAI === 'simulacao') {
-                        // [OPÇÃO A] MODO SIMULAÇÃO
-                        console.log("⚠️ Modo simulação ativo. Pulando o Back-End.");
-                        await new Promise(resolve => setTimeout(resolve, 1500)); // Espera 1.5s fictícios
-                        textoFinalRespostaIA = "[Modo Simulação] O sistema está em testes locais. Sua imagem foi salva com sucesso no Supabase, mas o servidor Back-End e as APIs pagas não foram acionados para economizar requisições!";
-                    } else {
-                        // [OPÇÃO B] USO DA IA NORMAL
-                        console.log("📡 Conectando à API do seu Back-End Node.js...");
-                        const respostaBackend = await uploadImageToBackend(imageFile);
-                        textoFinalRespostaIA = respostaBackend.resultadoIA; 
-                    }
-
-                    // 4. Joga a resposta na tela do chat
-                    const aiMsg = { id: Date.now(), role: 'assistant', text: textoFinalRespostaIA, image: null };
-                    setMessages(prev => [...prev, aiMsg]);
-                    setLoading(false); 
-
-                    // 5. Salva a resposta final de forma permanente no Supabase
-                    await supabase.from('mensagens').insert([{
-                        consulta_id: consultaId,
-                        role: 'assistant',
-                        texto: textoFinalRespostaIA,
-                        ia_utilizada: selectedAI,
-                        prompt_utilizado: selectedPrompt 
-                    }]);
-
-                } catch (err) {
-                    console.error("❌ Falha de comunicação:", err);
+                if (error) {
+                    console.error("❌ Erro no login:", error.message);
+                    alert("CPF ou senha incorretos! Tente novamente.");
                     setLoading(false);
-                    const errorMsg = { 
-                        id: Date.now(), 
-                        role: 'assistant', 
-                        text: "❌ Erro de conexão: Não consegui falar com o seu servidor Back-End. Verifique se ele está ligado ou mude o cabeçalho para o modo 'Simulação'.", 
-                        image: null 
-                    };
-                    setMessages(prev => [...prev, errorMsg]);
+                    return;
                 }
-                // ====================================================================
+
+                // 3. Se passou, libera a entrada para o chat!
+                console.log("✅ Login realizado com sucesso!", data.user);
+                navigate('/paciente');
 
             } else {
-                console.error("Erro no upload da imagem:", uploadError);
-                setLoading(false);
+                // Para o Médico e Cientista, como ainda não criamos o cadastro deles, mostramos um aviso
+                alert(`O sistema de login para ${loginType} está em construção!`);
             }
-        } else {
-            // Código caso envie apenas texto sem anexar uma foto
-            await supabase.from('mensagens').insert([{ consulta_id: consultaId, role: 'user', texto: textToSend, imagem_url: null }]);
-            const avisoMsg = { id: Date.now(), role: 'assistant', text: "Para realizar a triagem, por favor, anexe uma imagem nítida da lesão.", image: null };
-            setMessages(prev => [...prev, avisoMsg]);
+
             setLoading(false);
+        } else {
+            alert("Por favor, preencha o seu identificador e a senha.");
         }
-        
-        setImageFile(null); 
     };
 
-    const handleUpload = (file) => {
-        setImageFile(file);
-    };
+    const renderLoginForm = (title, labelID, placeholderID) => (
+        <div className="bg-[#343541] p-8 rounded-xl border border-gray-600 w-full max-w-md shadow-xl animate-fade-in">
+            <h2 className="text-2xl font-bold mb-6 text-center text-white">{title}</h2>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">{labelID}</label>
+                    <input 
+                        type="text" 
+                        required
+                        value={identificador}
+                        onChange={(e) => setIdentificador(e.target.value)}
+                        placeholder={placeholderID}
+                        className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">Senha</label>
+                    <input 
+                        type="password" 
+                        required
+                        value={senha}
+                        onChange={(e) => setSenha(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                </div>
+                
+                <div className="flex gap-3 mt-4">
+                    <button 
+                        type="button" 
+                        onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }}
+                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition"
+                    >
+                        Voltar
+                    </button>
+                    <button 
+                        type="submit"
+                        disabled={loading}
+                        className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                    >
+                        {loading ? 'Entrando...' : 'Entrar'}
+                    </button>
+                </div>
+
+                {/* Link para criar conta apenas para o Paciente */}
+                {title === "Login do Paciente" && (
+                    <div className="mt-4 text-center">
+                        <Link to="/cadastro" className="text-sm text-emerald-500 hover:underline">
+                            Não tem conta? Cadastre-se aqui
+                        </Link>
+                    </div>
+                )}
+            </form>
+        </div>
+    );
 
     return (
-        <div className="flex h-screen w-full text-gray-100 font-sans relative">
+        <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center text-white p-4">
+            <h1 className="text-4xl font-bold text-emerald-500 mb-2">SmartDerm AI</h1>
+            <p className="text-gray-400 mb-10 text-center">Acesso restrito. Autentique-se para continuar.</p>
             
-            {/* O MODAL DE NOVA CONSULTA (Sobrepõe a tela inteira quando isModalOpen for true) */}
-            {isModalOpen && (
-                <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-                    <div className="bg-[#202123] p-6 rounded-lg shadow-xl w-full max-w-md border border-gray-700">
-                        <h2 className="text-xl font-bold mb-4 text-white">Nova Triagem</h2>
-                        <form onSubmit={iniciarNovaConsulta}>
-                            <label className="block text-sm text-gray-400 mb-2">Nome do Paciente / Identificador</label>
-                            <input 
-                                type="text" 
-                                autoFocus
-                                value={patientName}
-                                onChange={(e) => setPatientName(e.target.value)}
-                                placeholder="Ex: João da Silva"
-                                className="w-full bg-[#343541] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 mb-6"
-                            />
-                            <div className="flex justify-end gap-3">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 rounded text-gray-300 hover:bg-gray-700 transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button 
-                                    type="submit"
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-white font-semibold transition disabled:opacity-50"
-                                    disabled={!patientName.trim()}
-                                >
-                                    Criar Consulta
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            {!loginType && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                    <button onClick={() => setLoginType('paciente')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-emerald-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">👤</span>
+                        <h2 className="text-xl font-bold mb-2">Sou Paciente</h2>
+                        <p className="text-sm text-gray-400">Acessar via CPF</p>
+                    </button>
+
+                    <button onClick={() => setLoginType('medico')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-blue-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">🩺</span>
+                        <h2 className="text-xl font-bold mb-2">Sou Médico</h2>
+                        <p className="text-sm text-gray-400">Acessar via CRN/CRM</p>
+                    </button>
+
+                    <button onClick={() => setLoginType('cientista')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-purple-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</span>
+                        <h2 className="text-xl font-bold mb-2">Cientista de Dados</h2>
+                        <p className="text-sm text-gray-400">Acesso Administrativo</p>
+                    </button>
                 </div>
             )}
 
-            <Sidebar 
-                onNewClick={() => setIsModalOpen(true)} 
-                history={history} 
-                activeId={consultaId}
-                onSelect={selecionarConsultaAntiga}
-            />
-            
-            <div className="flex-1 flex flex-col relative bg-[#343541]">
-                <ChatHeader selectedAI={selectedAI} setSelectedAI={setSelectedAI} selectedPrompt={selectedPrompt} setSelectedPrompt={setSelectedPrompt} />
-                
-                <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll pb-40">
-                    {!consultaId && messages.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-gray-500 flex-col gap-4">
-                            <span className="text-4xl">🏥</span>
-                            <p>Selecione um paciente no histórico ou inicie uma Nova Consulta.</p>
-                        </div>
-                    ) : (
-                        <>
-                            {messages.map(m => (
-                                <ChatMessage key={m.id} message={m} />
-                            ))}
-                            {loading && <SkeletonLoader />}
-                        </>
-                    )}
-                </div>
-                
-                {/* Esconde o input se não houver consulta aberta */}
-                {consultaId && (
-                    <ChatInput input={input} setInput={setInput} handleSend={handleSend} handleUpload={handleUpload} fileRef={fileRef} />
-                )}
-            </div>
+            {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF", "000.000.000-00")}
+            {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345-SP")}
+            {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "admin_username")}
         </div>
+    );
+}
+
+// O Roteador Principal
+function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<HomeGateway />} />
+                <Route path="/cadastro" element={<Register />} /> 
+                <Route path="/paciente" element={<PatientChat />} />
+                <Route path="/medico" element={<DoctorPanel />} />
+                <Route path="/cientista" element={<ScientistDashboard />} />
+            </Routes>
+        </BrowserRouter>
     );
 }
 
