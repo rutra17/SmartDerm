@@ -14,7 +14,7 @@ export async function analisarComDeepSeek(imagemBuffer, mimeType = 'image/jpeg',
   try {
     const client  = new OpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: BASE_URL });
     const base64  = imagemBuffer.toString('base64');
-    const dataUrl = \`data:\${mimeType};base64,\${base64}\`;
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
     const response = await client.chat.completions.create({
       model: config.modelo || MODELO_PADRAO, temperature: config.temperatura ?? 0.1,

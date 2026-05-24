@@ -25,4 +25,4 @@ Analise a imagem de lesao de pele fornecida e retorne um JSON com a seguinte est
   "aviso": "Este resultado e apenas um suporte diagnostico preliminar. A avaliacao medica presencial e indispensavel."
 }
 
-Responda APENAS com o JSON, sem texto adicional.\`;
+Responda APENAS com o JSON, sem texto adicional.`;

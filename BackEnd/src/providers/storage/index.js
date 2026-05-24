@@ -1,17 +1,11 @@
-import { uploadImagemSupabase, removerImagemSupabase } from './supabase.js';
-import { uploadImagemFirebase, removerImagemFirebase } from './firebase.js';
-
-const PROVIDER = process.env.STORAGE_PROVIDER || 'supabase';
+import { uploadImagemMinio, removerImagemMinio } from './minio.js';
 
 export async function uploadImagem(buffer, nomeArquivo, mimeType = 'image/jpeg') {
-  if (PROVIDER === 'firebase') return uploadImagemFirebase(buffer, nomeArquivo, mimeType);
-  return uploadImagemSupabase(buffer, nomeArquivo, mimeType);
+  return uploadImagemMinio(buffer, nomeArquivo, mimeType);
 }
 
 export async function removerImagem(caminho) {
-  if (PROVIDER === 'firebase') return removerImagemFirebase(caminho);
-  return removerImagemSupabase(caminho);
+  return removerImagemMinio(caminho);
 }
 
-export { uploadImagemSupabase, removerImagemSupabase } from './supabase.js';
-export { uploadImagemFirebase, removerImagemFirebase } from './firebase.js';
+export { uploadImagemMinio, removerImagemMinio } from './minio.js';
