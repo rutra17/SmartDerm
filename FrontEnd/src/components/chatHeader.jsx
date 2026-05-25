@@ -1,50 +1,75 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../services/supabase';
 
-export default function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedPrompt }) {
-    // Verifica se o modo atual é o de simulação
-    const isSimulation = selectedAI === 'simulacao';
+function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedPrompt }) {
+    const [listaPrompts, setListaPrompts] = useState([]);
+
+    // Carrega os prompts reais do banco de dados ao iniciar o chat
+    useEffect(() => {
+        const obterPromptsDoBanco = async () => {
+            const { data } = await supabase
+                .from('engenharia_prompts')
+                .select('titulo, chave_identificadora');
+            
+            if (data) {
+                setListaPrompts(data);
+                // Define o prompt padrão como selecionado inicialmente
+                if (!selectedPrompt) {
+                    setSelectedPrompt('padrao');
+                }
+            }
+        };
+        obterPromptsDoBanco();
+    }, []);
 
     return (
-        <div className="w-full bg-[#343541] border-b border-white/10 p-4 flex items-center justify-between text-sm text-gray-300 z-10 shadow-sm">
-            <div className="flex gap-4">
+        <div className="w-full bg-[#202123] border-b border-white/10 p-4 flex flex-wrap justify-between items-center gap-4 shadow-md">
+            <div className="flex items-center gap-2">
+                <span className="text-xl">🏥</span>
+                <h1 className="text-lg font-bold text-white">SmartDerm AI</h1>
+            </div>
+
+            {/* Controles de Configuração da IA */}
+            <div className="flex items-center gap-4">
+                
+                {/* Seletor de Modelo de IA */}
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-400">IA:</span>
+                    <label className="text-xs text-gray-400 font-semibold uppercase">Modelo:</label>
                     <select 
                         value={selectedAI} 
                         onChange={(e) => setSelectedAI(e.target.value)}
-                        className="bg-[#40414f] border border-white/10 rounded px-2 py-1 outline-none focus:border-emerald-500 transition"
+                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium"
                     >
                         <option value="gemini">Gemini 2.5 Flash</option>
-                        <option value="openai">OpenAI (GPT-4)</option>
-                        <option value="claude">Claude 3</option>
-                        <option value="deepseek">DeepSeek</option>
-                        {/* Nova opção de Simulação mantendo suas outras IAs */}
-                        <option value="simulacao">Simulação (Modo Teste)</option>
+                        <option value="openai">ChatGPT 4o</option>
+                        <option value="deepseek">DeepSeek R1</option>
+                        <option value="simulacao">⚠️ Modo Simulação</option>
                     </select>
                 </div>
+
+                {/* Seletor Dinâmico de Prompts */}
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-400">Prompt:</span>
+                    <label className="text-xs text-gray-400 font-semibold uppercase">Prompt:</label>
                     <select 
                         value={selectedPrompt} 
                         onChange={(e) => setSelectedPrompt(e.target.value)}
-                        className="bg-[#40414f] border border-white/10 rounded px-2 py-1 outline-none focus:border-emerald-500 transition"
+                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium max-w-[200px]"
                     >
-                        <option value="padrao">Padrão Médico</option>
-                        <option value="qualidade_alta">Teste: Alta Qualidade</option>
-                        <option value="qualidade_media">Teste: Media Qualidade</option>
-                        <option value="qualidade_baixo">Teste: Baixa Qualidade</option>
-                        <option value="sem_info">Teste: Sem Informação</option>
+                        {listaPrompts.length === 0 ? (
+                            <option value="padrao">Padrão Atual</option>
+                        ) : (
+                            listaPrompts.map(p => (
+                                <option key={p.chave_identificadora} value={p.chave_identificadora}>
+                                    {p.titulo}
+                                </option>
+                            ))
+                        )}
                     </select>
                 </div>
-            </div>
-            
-            {/* Indicador de Status Dinâmico */}
-            <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${isSimulation ? 'bg-yellow-500' : 'bg-emerald-500 animate-pulse'}`}></span>
-                <span className={`text-xs uppercase tracking-wider ${isSimulation ? 'text-yellow-500 font-bold' : 'text-gray-400'}`}>
-                    {isSimulation ? 'Modo Simulação' : 'Sistema Online'}
-                </span>
+
             </div>
         </div>
     );
 }
+
+export default ChatHeader;

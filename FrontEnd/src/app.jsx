@@ -1,66 +1,102 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
-
-// IMPORTANTE: Importando a conexão com o banco de dados para o Login
 import { supabase } from './services/supabase';
 
-// Importando as 4 páginas
 import PatientChat from './pages/PatientChat';
 import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 
-// A Página Inicial com Formulários de Login
 function HomeGateway() {
     const navigate = useNavigate();
-    
-    // Estados do formulário
     const [loginType, setLoginType] = useState(null); 
     const [identificador, setIdentificador] = useState('');
     const [senha, setSenha] = useState('');
-    
-    // Novo estado para o botão mostrar que está carregando
     const [loading, setLoading] = useState(false);
 
-    // FUNÇÃO DE LOGIN ATUALIZADA COM O SUPABASE
+    // --- 1. VALIDADOR MATEMÁTICO DE CPF REAL ---
+    const validarCPF = (cpf) => {
+        cpf = cpf.replace(/[^\d]+/g, ''); // Remove formatação
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; // Bloqueia 111.111.111-11
+        
+        let soma = 0, resto;
+        for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(cpf.substring(9, 10))) return false;
+        
+        soma = 0;
+        for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(cpf.substring(10, 11))) return false;
+        
+        return true;
+    };
+
+    const aplicarMascaraCPF = (valor) => {
+        return valor.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
+    };
+
+    const aplicarMascaraNumerica = (valor) => valor.replace(/\D/g, '').substring(0, 8);
+
+    const handleIdentificadorChange = (e) => {
+        let valorDigitado = e.target.value;
+        if (loginType === 'paciente') valorDigitado = aplicarMascaraCPF(valorDigitado);
+        else if (loginType === 'medico') valorDigitado = aplicarMascaraNumerica(valorDigitado);
+        setIdentificador(valorDigitado);
+    };
+
+    // --- 2. LOGIN UNIFICADO E SEGURO COM O SUPABASE ---
     const handleLogin = async (e) => {
         e.preventDefault();
         
-        if (identificador && senha) {
-            setLoading(true);
-
-            if (loginType === 'paciente') {
-                // 1. Refaz o truque do e-mail falso usando o CPF digitado
-                const cpfNumeros = identificador.replace(/\D/g, ''); 
-                const emailFalso = `${cpfNumeros}@paciente.smartderm.com`;
-
-                // 2. Pergunta ao Supabase se a senha está correta
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: emailFalso,
-                    password: senha,
-                });
-
-                if (error) {
-                    console.error("❌ Erro no login:", error.message);
-                    alert("CPF ou senha incorretos! Tente novamente.");
-                    setLoading(false);
-                    return;
-                }
-
-                // 3. Se passou, libera a entrada para o chat!
-                console.log("✅ Login realizado com sucesso!", data.user);
-                navigate('/paciente');
-
-            } else {
-                // Para o Médico e Cientista, como ainda não criamos o cadastro deles, mostramos um aviso
-                alert(`O sistema de login para ${loginType} está em construção!`);
-            }
-
-            setLoading(false);
-        } else {
-            alert("Por favor, preencha o seu identificador e a senha.");
+        if (!identificador || !senha) {
+            alert("Por favor, preencha o seu identificador e a senha."); return;
         }
+
+        setLoading(true);
+        let emailMontado = "";
+
+        // Formata o email do Supabase dependendo do tipo de conta
+        if (loginType === 'paciente') {
+            const cpfNumeros = identificador.replace(/\D/g, ''); 
+            if (!validarCPF(cpfNumeros)) {
+                alert("❌ O CPF introduzido não é válido matematicamente.");
+                setLoading(false); return;
+            }
+            emailMontado = `${cpfNumeros}@paciente.smartderm.com`;
+        } 
+        else if (loginType === 'medico') {
+            const crmNumeros = identificador.replace(/\D/g, '');
+            emailMontado = `${crmNumeros}@medico.smartderm.com`;
+        } 
+        else if (loginType === 'cientista') {
+            const userFormatado = identificador.toLowerCase().replace(/\s/g, '_');
+            emailMontado = `${userFormatado}@cientista.smartderm.com`;
+        }
+
+        // Tenta fazer o login real na base de dados
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: emailMontado,
+            password: senha,
+        });
+
+        if (error) {
+            console.error("Erro no login:", error.message);
+            alert("❌ Credenciais incorretas ou utilizador não registado.");
+            setLoading(false);
+            return;
+        }
+
+        // Se o login for bem sucedido, direciona para o painel correto
+        console.log(`✅ Login de ${loginType} realizado com sucesso!`);
+        if (loginType === 'paciente') navigate('/paciente');
+        else if (loginType === 'medico') navigate('/medico');
+        else if (loginType === 'cientista') navigate('/cientista');
+
+        setLoading(false);
     };
 
     const renderLoginForm = (title, labelID, placeholderID) => (
@@ -70,51 +106,32 @@ function HomeGateway() {
                 <div>
                     <label className="block text-sm text-gray-400 mb-1">{labelID}</label>
                     <input 
-                        type="text" 
-                        required
-                        value={identificador}
-                        onChange={(e) => setIdentificador(e.target.value)}
-                        placeholder={placeholderID}
+                        type="text" required value={identificador} onChange={handleIdentificadorChange} placeholder={placeholderID}
                         className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                 </div>
                 <div>
                     <label className="block text-sm text-gray-400 mb-1">Senha</label>
                     <input 
-                        type="password" 
-                        required
-                        value={senha}
-                        onChange={(e) => setSenha(e.target.value)}
-                        placeholder="••••••••"
+                        type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••••"
                         className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                 </div>
                 
                 <div className="flex gap-3 mt-4">
-                    <button 
-                        type="button" 
-                        onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }}
-                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition"
-                    >
+                    <button type="button" onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }} className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition">
                         Voltar
                     </button>
-                    <button 
-                        type="submit"
-                        disabled={loading}
-                        className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}
-                    >
+                    <button type="submit" disabled={loading} className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}>
                         {loading ? 'Entrando...' : 'Entrar'}
                     </button>
                 </div>
 
-                {/* Link para criar conta apenas para o Paciente */}
-                {title === "Login do Paciente" && (
-                    <div className="mt-4 text-center">
-                        <Link to="/cadastro" className="text-sm text-emerald-500 hover:underline">
-                            Não tem conta? Cadastre-se aqui
-                        </Link>
-                    </div>
-                )}
+                <div className="mt-4 text-center">
+                    <Link to="/cadastro" className="text-sm text-emerald-500 hover:underline">
+                        Não tem conta? Cadastre-se aqui
+                    </Link>
+                </div>
             </form>
         </div>
     );
@@ -131,13 +148,11 @@ function HomeGateway() {
                         <h2 className="text-xl font-bold mb-2">Sou Paciente</h2>
                         <p className="text-sm text-gray-400">Acessar via CPF</p>
                     </button>
-
                     <button onClick={() => setLoginType('medico')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-blue-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
                         <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">🩺</span>
                         <h2 className="text-xl font-bold mb-2">Sou Médico</h2>
                         <p className="text-sm text-gray-400">Acessar via CRN/CRM</p>
                     </button>
-
                     <button onClick={() => setLoginType('cientista')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-purple-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
                         <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</span>
                         <h2 className="text-xl font-bold mb-2">Cientista de Dados</h2>
@@ -146,14 +161,13 @@ function HomeGateway() {
                 </div>
             )}
 
-            {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF", "000.000.000-00")}
-            {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345-SP")}
-            {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "admin_username")}
+            {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
+            {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
+            {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: bruno_admin")}
         </div>
     );
 }
 
-// O Roteador Principal
 function App() {
     return (
         <BrowserRouter>

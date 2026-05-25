@@ -205,12 +205,12 @@ function PatientChat() {
 
                     if (selectedAI === 'simulacao') {
                         console.log("⚠️ Modo simulação ativo. Pulando o Back-End.");
-                        // Espera 1.5s fictícios para dar o efeito visual de carregamento
                         await new Promise(resolve => setTimeout(resolve, 1500)); 
-                        textoFinalRespostaIA = "[Modo Simulação] O sistema está em testes locais. Sua imagem foi salva com sucesso no Supabase, mas o servidor Back-End e as APIs pagas não foram acionados para economizar requisições!";
+                        textoFinalRespostaIA = `[Modo Simulação] Teste executado com sucesso!\nIA selecionada: ${selectedAI}\nID do Prompt aplicado: ${selectedPrompt}\nSua imagem foi salva de forma isolada na nuvem.`;
                     } else {
-                        console.log("📡 Conectando à API do seu Back-End Node.js...");
-                        // Envia a imagem para o seu Back-End DE VERDADE
+                        console.log(`📡 Conectando ao Back-End usando o modelo: ${selectedAI} e prompt ID: ${selectedPrompt}`);
+                        
+                        // Enviando os parâmetros selecionados no cabeçalho do front para a API local
                         const respostaBackend = await uploadImageToBackend(imageFile, textToSend, selectedAI, selectedPrompt);
                         textoFinalRespostaIA = respostaBackend.resultadoIA; 
                     }
@@ -219,13 +219,13 @@ function PatientChat() {
                     const aiMsg = { id: Date.now(), role: 'assistant', text: textoFinalRespostaIA, image: null };
                     setMessages(prev => [...prev, aiMsg]);
 
-                    // 5. Salva a resposta final de forma permanente no Supabase
+                    // 5. Salva a resposta final de forma permanente no Supabase com os dados do Cientista
                     await supabase.from('mensagens').insert([{
                         consulta_id: consultaId,
                         role: 'assistant',
                         texto: textoFinalRespostaIA,
                         ia_utilizada: selectedAI,
-                        prompt_utilizado: selectedPrompt 
+                        prompt_utilizado: selectedPrompt // Salvando de forma correta para os gráficos
                     }]);
 
                 } catch (err) {
