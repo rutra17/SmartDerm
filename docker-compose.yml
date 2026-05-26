@@ -1,74 +1,18 @@
 services:
-  minio:
-    image: minio/minio:latest
-    container_name: smartderm-minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
-    volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
-    networks:
-      - smartderm-network
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+  # O NOSSO BACK-END
   backend:
-    build:
-      context: ./BackEnd
-      dockerfile: Dockerfile
-    container_name: smartderm-backend
-    restart: unless-stopped
+    build: ./BackEnd
     ports:
-      - "3000:3000"
+      - "3001:3001" 
     environment:
-      PORT: 3000
-      # AI Providers
-      AI_PROVIDER: ${AI_PROVIDER:-gemini}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      # MinIO
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: "false"
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-      MINIO_BUCKET: ${MINIO_BUCKET:-smartderm-imagens}
+      - PORT=3001   
+    restart: always
 
-    depends_on:
-      minio:
-        condition: service_healthy
-    networks:
-      - smartderm-network
-
+  # O NOSSO FRONT-END
   frontend:
-    build:
-      context: ./FrontEnd
-      dockerfile: Dockerfile
-      args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
-    container_name: smartderm-frontend
-    restart: unless-stopped
+    build: ./FrontEnd
     ports:
-      - "80:80"
+      - "5173:5173"
     depends_on:
-      - backend
-    networks:
-      - smartderm-network
-
-volumes:
-  minio_data:
-
-networks:
-  smartderm-network:
-    driver: bridge
+      - backend     
+    restart: always

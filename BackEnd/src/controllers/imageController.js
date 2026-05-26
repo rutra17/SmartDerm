@@ -1,57 +1,58 @@
-import { randomUUID } from 'node:crypto';
-import { uploadImagem } from '../providers/storage/index.js';
-import {
-  analisarComClaude,
-  analisarComOpenAI,
-  analisarComGemini,
-  analisarComDeepSeek,
-  PROVIDERS_DISPONIVEIS,
-} from '../providers/ai/index.js';
-import { createLaudo, LaudoStatus } from '../models/Laudo.js';
-
-const PROVIDERS = {
-  claude:   analisarComClaude,
-  openai:   analisarComOpenAI,
-  gemini:   analisarComGemini,
-  deepseek: analisarComDeepSeek,
-};
+import { supabase } from '../services/supabase.js';
+import { analisarImagemComGemini } from '../services/geminiService.js';
 
 export const uploadImage = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nenhuma imagem foi enviada.' });
-  }
+    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
 
-  const { buffer, mimetype, originalname } = req.file;
+    try {
+        // 1. RECEBER OS INGREDIENTES DO FRONT-END
+        const { userText, aiModel, promptKey, consultaId } = req.body;
 
-  // Provider escolhido via query (?provider=gemini) ou variável de ambiente, padrão: gemini
-  const providerSolicitado = (req.query.provider || process.env.AI_PROVIDER || 'gemini').toLowerCase();
+        console.log("📥 Ingredientes recebidos:", { userText, aiModel, promptKey, consultaId });
 
-  if (!PROVIDERS_DISPONIVEIS.includes(providerSolicitado)) {
-    return res.status(400).json({
-      error: `Provider inválido: "${providerSolicitado}". Disponíveis: ${PROVIDERS_DISPONIVEIS.join(', ')}`,
-    });
-  }
+        // 2. O PÃO DE CIMA: Buscar a regra do Cientista no Supabase
+        const { data: promptData } = await supabase
+            .from('engenharia_prompts')
+            .select('comando_base')
+            .eq('chave_identificadora', promptKey || 'padrao')
+            .single();
 
-  // Upload da imagem para o MinIO
-  const nomeArquivo = `${randomUUID()}-${originalname}`;
-  const { url: imagemUrl, caminho, erro: erroStorage } = await uploadImagem(buffer, nomeArquivo, mimetype);
+        const instrucaoBase = promptData ? promptData.comando_base : "Aja como um dermatologista. Analise a imagem.";
 
-  if (erroStorage) {
-    return res.status(500).json({ error: `Falha no storage: ${erroStorage}` });
-  }
+        // 3. O RECHEIO: Montar o Sanduíche com o relato do Paciente
+        let promptFinal = `${instrucaoBase}\n\n`;
 
-  // Análise com o provider de IA selecionado
-  const analisar = PROVIDERS[providerSolicitado];
-  const resultadoAI = await analisar(buffer, mimetype);
+        if (userText && userText.trim() !== "") {
+            promptFinal += `RELATO DO PACIENTE:\n"${userText.trim()}"\n\n`;
+        } else {
+            promptFinal += `INFORMAÇÃO ADICIONAL:\nO paciente não forneceu detalhes textuais, analise apenas a imagem.\n\n`;
+        }
 
-  const laudo = createLaudo({
-    id:           randomUUID(),
-    imagemId:     caminho,
-    imagemUrl,
-    resultadosAI: [resultadoAI],
-    status:       resultadoAI.erro ? LaudoStatus.ERRO : LaudoStatus.CONCLUIDO,
-  });
+        promptFinal += `Com base nas instruções acima e no relato, forneça a avaliação técnica da imagem.`;
 
-  const statusHttp = resultadoAI.erro ? 500 : 200;
-  return res.status(statusHttp).json(laudo);
+        // 4. ASSAR O SANDUÍCHE: Enviar tudo para o Gemini
+        const textoDaIA = await analisarImagemComGemini(
+            req.file.buffer,
+            req.file.mimetype,
+            promptFinal
+        );
+
+        // 5. GUARDAR NO PRONTUÁRIO: Salvar a resposta no Supabase
+        if (consultaId) {
+            await supabase.from('mensagens').insert([{
+                consulta_id: consultaId,
+                role: 'assistant',
+                texto: textoDaIA,
+                ia_utilizada: aiModel || 'gemini',
+                prompt_utilizado: promptKey || 'padrao'
+            }]);
+        }
+
+        // 6. ENTREGAR AO PACIENTE
+        res.status(200).json({ resultadoIA: textoDaIA });
+
+    } catch (error) {
+        console.error("❌ Erro na montagem do Sanduíche de Dados:", error);
+        res.status(500).json({ error: 'Erro interno ao processar a IA.' });
+    }
 };

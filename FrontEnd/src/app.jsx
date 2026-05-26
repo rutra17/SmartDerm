@@ -1,153 +1,184 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import Sidebar from './components/Sidebar';
-import ChatHeader from './components/ChatHeader';
-import ChatMessage from './components/ChatMessage';
-import ChatInput from './components/ChatInput';
-import SkeletonLoader from './components/SkeletonLoader';
+import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
 import { supabase } from './services/supabase';
-import { uploadImageToBackend } from './services/api';
 
-function App() {
-    const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState('');
+import PatientChat from './pages/PatientChat';
+import DoctorPanel from './pages/DoctorPanel';
+import ScientistDashboard from './pages/ScientistDashboard';
+import Register from './pages/Register';
+
+function HomeGateway() {
+    const navigate = useNavigate();
+    const [loginType, setLoginType] = useState(null); 
+    const [identificador, setIdentificador] = useState('');
+    const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
-    
-    const [selectedAI, setSelectedAI] = useState('gemini');
-    const [selectedPrompt, setSelectedPrompt] = useState('padrao');
-    const [consultaId, setConsultaId] = useState(null); 
-    
-    // NOVO: Estado para guardar o arquivo real da imagem antes do envio
-    const [imageFile, setImageFile] = useState(null); 
-    
-    const scrollRef = useRef(null);
-    const fileRef = useRef(null);
 
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages, loading]);
-
-    useEffect(() => {
-        const iniciarNovaConsulta = async () => {
-            const { data, error } = await supabase.from('consultas').insert([{}]).select().single();
-            if (!error) {
-                setConsultaId(data.id);
-                setMessages([
-                    { id: Date.now(), role: 'assistant', text: 'Bem-vindo ao sistema de triagem. Por favor, anexe uma imagem nítida da lesão na pele para análise da IA.', image: null }
-                ]);
-            }
-        };
-        iniciarNovaConsulta();
-    }, []);
-
-    const simulateResponse = async (userText, userImgUrl, currentConsultaId) => {
-        setTimeout(async () => {
-            const responseText = userImgUrl
-                ? `Análise concluída via ${selectedAI.toUpperCase()} (Simulação do prompt: ${selectedPrompt}): Foram detectadas bordas irregulares e pigmentação mista. Recomendamos a consulta com um dermatologista para realizar uma dermatoscopia.`
-                : "Para uma análise de câncer de pele, é necessário o envio de uma foto da lesão.";
-
-            const responseMsg = { id: Date.now(), role: 'assistant', text: responseText, image: null };
-
-            if (currentConsultaId) {
-                await supabase.from('mensagens').insert([{
-                    consulta_id: currentConsultaId,
-                    role: 'assistant',
-                    texto: responseText,
-                    ia_utilizada: selectedAI,
-                    prompt_utilizado: selectedPrompt
-                }]);
-            }
-
-            setMessages(prev => [...prev, responseMsg]);
-            setLoading(false);
-        }, 3000);
+    // --- 1. VALIDADOR MATEMÁTICO DE CPF REAL ---
+    const validarCPF = (cpf) => {
+        cpf = cpf.replace(/[^\d]+/g, ''); // Remove formatação
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; // Bloqueia 111.111.111-11
+        
+        let soma = 0, resto;
+        for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(cpf.substring(9, 10))) return false;
+        
+        soma = 0;
+        for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(cpf.substring(10, 11))) return false;
+        
+        return true;
     };
 
-const handleSend = async (e, previewUrl = null) => {
+    const aplicarMascaraCPF = (valor) => {
+        return valor.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
+    };
+
+    const aplicarMascaraNumerica = (valor) => valor.replace(/\D/g, '').substring(0, 8);
+
+    const handleIdentificadorChange = (e) => {
+        let valorDigitado = e.target.value;
+        if (loginType === 'paciente') valorDigitado = aplicarMascaraCPF(valorDigitado);
+        else if (loginType === 'medico') valorDigitado = aplicarMascaraNumerica(valorDigitado);
+        setIdentificador(valorDigitado);
+    };
+
+    // --- 2. LOGIN UNIFICADO E SEGURO COM O SUPABASE ---
+    const handleLogin = async (e) => {
         e.preventDefault();
         
-        // Impede envio vazio se não tiver texto nem imagem
-        if (!input.trim() && !previewUrl) return;
-        
-        const textToSend = input.trim() ? input : "Imagem enviada para triagem.";
-        const newMsg = { id: Date.now(), role: 'user', text: textToSend, image: previewUrl };
-        
-        setMessages(prev => [...prev, newMsg]);
-        setInput('');
-        setLoading(true); // Inicia a animação de carregamento (Skeleton)
+        if (!identificador || !senha) {
+            alert("Por favor, preencha o seu identificador e a senha."); return;
+        }
 
-        let urlFinalDaImagem = null;
+        setLoading(true);
+        let emailMontado = "";
 
-        // Faz o upload da imagem real para o Storage do Supabase
-        if (imageFile) {
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('imagens-medicas')
-                .upload(fileName, imageFile);
-
-            if (!uploadError) {
-                // Pega a URL pública da imagem que acabou de subir no Supabase
-                const { data: publicUrlData } = supabase.storage
-                    .from('imagens-medicas')
-                    .getPublicUrl(fileName);
-                
-                urlFinalDaImagem = publicUrlData.publicUrl;
-
-                // --- CONEXÃO COM O BACK-END AQUI ---
-                try {
-                    console.log("Enviando imagem para a API local (Back-End)...");
-                    // Chama a função do api.js enviando o arquivo físico da imagem
-                    const respostaBackend = await uploadImageToBackend(imageFile);
-                    console.log("Resposta do Back-End:", respostaBackend);
-                } catch (err) {
-                    console.error("Falha ao enviar para o Back-End:", err);
-                }
-                // -----------------------------------
-
-            } else {
-                console.error("Erro no upload da imagem para o Supabase:", uploadError);
+        // Formata o email do Supabase dependendo do tipo de conta
+        if (loginType === 'paciente') {
+            const cpfNumeros = identificador.replace(/\D/g, ''); 
+            if (!validarCPF(cpfNumeros)) {
+                alert("❌ O CPF introduzido não é válido matematicamente.");
+                setLoading(false); return;
             }
-        }
-        
-        setImageFile(null); // Limpa o arquivo selecionado da memória
-
-        // Salva a mensagem no banco de dados (Supabase) usando a URL real da nuvem
-        if (consultaId) {
-            await supabase.from('mensagens').insert([{
-                consulta_id: consultaId,
-                role: 'user',
-                texto: textToSend,
-                imagem_url: urlFinalDaImagem 
-            }]);
+            emailMontado = `${cpfNumeros}@paciente.smartderm.com`;
+        } 
+        else if (loginType === 'medico') {
+            const crmNumeros = identificador.replace(/\D/g, '');
+            emailMontado = `${crmNumeros}@medico.smartderm.com`;
+        } 
+        else if (loginType === 'cientista') {
+            const userFormatado = identificador.toLowerCase().replace(/\s/g, '_');
+            emailMontado = `${userFormatado}@cientista.smartderm.com`;
         }
 
-        // Chama a IA (Por enquanto, a simulação. Em breve, a IA real)
-        simulateResponse(textToSend, urlFinalDaImagem, consultaId);
+        // Tenta fazer o login real na base de dados
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: emailMontado,
+            password: senha,
+        });
+
+        if (error) {
+            console.error("Erro no login:", error.message);
+            alert("❌ Credenciais incorretas ou utilizador não registado.");
+            setLoading(false);
+            return;
+        }
+
+        // Se o login for bem sucedido, direciona para o painel correto
+        console.log(`✅ Login de ${loginType} realizado com sucesso!`);
+        if (loginType === 'paciente') navigate('/paciente');
+        else if (loginType === 'medico') navigate('/medico');
+        else if (loginType === 'cientista') navigate('/cientista');
+
+        setLoading(false);
     };
 
-    // NOVO: Função atualizada para guardar o arquivo real no estado
-    const handleUpload = (file) => {
-        setImageFile(file);
-    };
+    const renderLoginForm = (title, labelID, placeholderID) => (
+        <div className="bg-[#343541] p-8 rounded-xl border border-gray-600 w-full max-w-md shadow-xl animate-fade-in">
+            <h2 className="text-2xl font-bold mb-6 text-center text-white">{title}</h2>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">{labelID}</label>
+                    <input 
+                        type="text" required value={identificador} onChange={handleIdentificadorChange} placeholder={placeholderID}
+                        className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">Senha</label>
+                    <input 
+                        type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••••"
+                        className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                </div>
+                
+                <div className="flex gap-3 mt-4">
+                    <button type="button" onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }} className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition">
+                        Voltar
+                    </button>
+                    <button type="submit" disabled={loading} className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}>
+                        {loading ? 'Entrando...' : 'Entrar'}
+                    </button>
+                </div>
+
+                <div className="mt-4 text-center">
+                    <Link to="/cadastro" className="text-sm text-emerald-500 hover:underline">
+                        Não tem conta? Cadastre-se aqui
+                    </Link>
+                </div>
+            </form>
+        </div>
+    );
 
     return (
-        <div className="flex h-screen w-full text-gray-100 font-sans">
-            <Sidebar />
-            <div className="flex-1 flex flex-col relative bg-[#343541]">
-                <ChatHeader selectedAI={selectedAI} setSelectedAI={setSelectedAI} selectedPrompt={selectedPrompt} setSelectedPrompt={setSelectedPrompt} />
-                <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll pb-40">
-                    {messages.map(m => (
-                        <ChatMessage key={m.id} message={m} />
-                    ))}
-                    {loading && <SkeletonLoader />}
+        <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center text-white p-4">
+            <h1 className="text-4xl font-bold text-emerald-500 mb-2">SmartDerm AI</h1>
+            <p className="text-gray-400 mb-10 text-center">Acesso restrito. Autentique-se para continuar.</p>
+            
+            {!loginType && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                    <button onClick={() => setLoginType('paciente')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-emerald-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">👤</span>
+                        <h2 className="text-xl font-bold mb-2">Sou Paciente</h2>
+                        <p className="text-sm text-gray-400">Acessar via CPF</p>
+                    </button>
+                    <button onClick={() => setLoginType('medico')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-blue-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">🩺</span>
+                        <h2 className="text-xl font-bold mb-2">Sou Médico</h2>
+                        <p className="text-sm text-gray-400">Acessar via CRN/CRM</p>
+                    </button>
+                    <button onClick={() => setLoginType('cientista')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-purple-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</span>
+                        <h2 className="text-xl font-bold mb-2">Cientista de Dados</h2>
+                        <p className="text-sm text-gray-400">Acesso Administrativo</p>
+                    </button>
                 </div>
-                <ChatInput input={input} setInput={setInput} handleSend={handleSend} handleUpload={handleUpload} fileRef={fileRef} />
-            </div>
+            )}
+
+            {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
+            {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
+            {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: bruno_admin")}
         </div>
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<HomeGateway />} />
+                <Route path="/cadastro" element={<Register />} /> 
+                <Route path="/paciente" element={<PatientChat />} />
+                <Route path="/medico" element={<DoctorPanel />} />
+                <Route path="/cientista" element={<ScientistDashboard />} />
+            </Routes>
+        </BrowserRouter>
     );
 }
 
