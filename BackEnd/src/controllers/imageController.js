@@ -1,43 +1,58 @@
+import { supabase } from '../services/supabase.js';
 import { analisarImagemComGemini } from '../services/geminiService.js';
 
-// Adicionamos o 'async' aqui porque agora vamos esperar a IA pensar
-export const uploadImage = async (req, res) => { 
-    // 1. Verifica se algum arquivo chegou
-    if (!req.file) {
-        return res.status(400).json({ error: 'Nenhuma imagem foi enviada.' });
-    }
+export const uploadImage = async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
 
     try {
-        const fileInfo = {
-            nome: req.file.originalname,
-            tipo: req.file.mimetype,
-            tamanho: `${(req.file.size / 1024).toFixed(2)} KB`
-        };
+        // 1. RECEBER OS INGREDIENTES DO FRONT-END
+        const { userText, aiModel, promptKey, consultaId } = req.body;
 
-        console.log("📸 Imagem recebida no servidor:", fileInfo.nome);
+        console.log("📥 Ingredientes recebidos:", { userText, aiModel, promptKey, consultaId });
 
-        // 2. Define o prompt que a IA vai seguir
-        const promptPadrao = "Você é um assistente especializado em dermatologia. Analise esta imagem de uma lesão na pele e descreva as características visíveis (Assimetria, Bordas, Cor e Diâmetro). Termine a mensagem lembrando que isso é apenas uma triagem e o paciente deve consultar um médico.";
+        // 2. O PÃO DE CIMA: Buscar a regra do Cientista no Supabase
+        const { data: promptData } = await supabase
+            .from('engenharia_prompts')
+            .select('comando_base')
+            .eq('chave_identificadora', promptKey || 'padrao')
+            .single();
 
-        // 3. Envia a imagem (que está na memória RAM/buffer) para o serviço do Gemini
-        // Isso pode demorar alguns segundos, por isso usamos o 'await'
+        const instrucaoBase = promptData ? promptData.comando_base : "Aja como um dermatologista. Analise a imagem.";
+
+        // 3. O RECHEIO: Montar o Sanduíche com o relato do Paciente
+        let promptFinal = `${instrucaoBase}\n\n`;
+
+        if (userText && userText.trim() !== "") {
+            promptFinal += `RELATO DO PACIENTE:\n"${userText.trim()}"\n\n`;
+        } else {
+            promptFinal += `INFORMAÇÃO ADICIONAL:\nO paciente não forneceu detalhes textuais, analise apenas a imagem.\n\n`;
+        }
+
+        promptFinal += `Com base nas instruções acima e no relato, forneça a avaliação técnica da imagem.`;
+
+        // 4. ASSAR O SANDUÍCHE: Enviar tudo para o Gemini
         const textoDaIA = await analisarImagemComGemini(
-            req.file.buffer, 
-            req.file.mimetype, 
-            promptPadrao
+            req.file.buffer,
+            req.file.mimetype,
+            promptFinal
         );
 
-        console.log("✅ Análise do Gemini concluída com sucesso!");
+        // 5. GUARDAR NO PRONTUÁRIO: Salvar a resposta no Supabase
+        if (consultaId) {
+            await supabase.from('mensagens').insert([{
+                consulta_id: consultaId,
+                role: 'assistant',
+                texto: textoDaIA,
+                ia_utilizada: aiModel || 'gemini',
+                prompt_utilizado: promptKey || 'padrao'
+            }]);
+        }
 
-        // 4. Retorna a resposta final e real para o Front-End
-        res.status(200).json({
-            message: 'Análise concluída!',
-            detalhes: fileInfo,
-            resultadoIA: textoDaIA // A mágica acontece aqui: enviamos o texto gerado de volta
-        });
+        // 6. ENTREGAR AO PACIENTE
+        res.status(200).json({ resultadoIA: textoDaIA });
 
     } catch (error) {
-        console.error("❌ Erro interno ao analisar a imagem:", error);
-        res.status(500).json({ error: 'Ocorreu um erro ao processar a imagem na IA.' });
+        console.error("❌ Erro na montagem do Sanduíche de Dados:", error);
+        res.status(500).json({ error: 'Erro interno ao processar a IA.' });
     }
 };
