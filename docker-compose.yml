@@ -12,7 +12,7 @@ services:
   frontend:
     build: ./FrontEnd
     ports:
-      - "5173:5173" # <--- A MÁGICA AQUI: Ligando a 8080 do PC à 5173 do Vite
+      - "5173:5173"
     depends_on:
       - backend     
     restart: always

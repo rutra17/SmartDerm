@@ -1,18 +1,3 @@
-Dermatologia Inteligente: Classificação de Lesões na Pele
-O câncer de pele é um dos mais comuns, e a detecção precoce muda tudo. O foco aqui não é substituir o médico, mas servir como um "triador" em postos de saúde ou via app de smartphone.
+O projeto SmartDerm consiste no desenvolvimento de um sistema multimodal que integra Visão Computacional e Modelos de Linguagem de Grande Escala (LLMs e VLMs). Em vez de apenas fornecer uma classificação binária, o sistema analisa imagens dermatoscópicas para identificar padrões visuais de lesões de pele e gera relatórios diagnósticos estruturados e explicáveis. 
 
-O Problema: Filas imensas para dermatologistas para avaliar manchas que, muitas vezes, são benignas.
-
-A Solução: Um modelo que classifica imagens de pele em categorias (melanoma, nevo, carcinoma, etc.).
-
-O Banco de Dados: ISIC Archive (International Skin Imaging Collaboration). É simplesmente o maior do mundo, com mais de 500.000 imagens de alta qualidade e metadados.
-
-O Diferencial Acadêmico: A ideia é implementar técnicas de Grad-CAM (Gradient-weighted Class Activation Mapping). O que é: O algoritmo gera um "mapa de calor" sobre a foto da pele, circulando exatamente as características (bordas irregulares, cores) que o levaram àquela conclusão.
-
-Podemos comparar a precisão do modelo (Accuracy) com a relevância clínica das áreas destacadas.
-
-O Diferencial de Negócio: Podemos usar um LLM local (como um Llama 3 via Ollama) para atuar como um "Agente Relator".
-
-Fluxo: O modelo de Visão Computacional detecta a lesão: O mapa de calor destaca os pontos críticos: O Agente de IA lê esses dados e escreve um Laudo Técnico Preliminar em linguagem médica.
-
-Venda para Empresas: A ideia é vender uma "ferramenta de produtividade que pré-escreve laudos para o médico revisar". Clínicas de dermatologia, planos de saúde (para reduzir custos de biópsias desnecessárias) e empresas de telemedicina.
+O objetivo é provar que a união de redes neurais extratoras de características com a capacidade de raciocínio de LLMs modernos (como Gemini, GPT-4, Claude) não apenas viabiliza a detecção precoce de cânceres de pele, mas também pode ser aprimorada para fornecer justificativas clínicas interpretáveis, preenchendo a lacuna entre a predição da máquina e a compreensão do profissional de saúde.
