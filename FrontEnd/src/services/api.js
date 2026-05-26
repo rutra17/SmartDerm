@@ -6,9 +6,12 @@ export const uploadImageToBackend = async (imageFile, userText, selectedAI, sele
     formData.append('promptKey', selectedPrompt);
     formData.append('consultaId', consultaId);
 
-    const response = await fetch('http://localhost:3000/api/upload', {
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+    const response = await fetch(`${baseUrl}/upload`, {
         method: 'POST',
         body: formData,
     });
+
     return await response.json();
 };

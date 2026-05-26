@@ -1,23 +1,18 @@
-version: '3.8'
-
 services:
+  # O NOSSO BACK-END
   backend:
     build: ./BackEnd
     ports:
-      - "3001:3000" # O Docker expõe na 3001 para não conflitar com seu Node local
-    env_file:
-      - ./BackEnd/.env
-    volumes:
-      - ./BackEnd:/app
+      - "3001:3001" 
+    environment:
+      - PORT=3001   
+    restart: always
 
+  # O NOSSO FRONT-END
   frontend:
     build: ./FrontEnd
     ports:
-      - "8080:5173" # O Docker expõe na 8080 para não conflitar com seu Vite local
-    env_file:
-      - ./FrontEnd/.env
-    volumes:
-      - ./FrontEnd:/app
-      - /app/node_modules
+      - "5173:5173" # <--- A MÁGICA AQUI: Ligando a 8080 do PC à 5173 do Vite
     depends_on:
-      - backend
+      - backend     
+    restart: always
