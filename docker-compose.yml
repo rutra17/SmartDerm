@@ -2,7 +2,7 @@ services:
   backend:
     build: ./BackEnd
     expose:
-      - "3001"      # <--- CORRIGIDO: Agora usa expose como o frontend!
+      - "3001"  
     environment:
       - PORT=3001
     restart: always
