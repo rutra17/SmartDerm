@@ -1,1 +1,0 @@
-    ├── controllers/    # Lida com as requisições HTTP

@@ -1,1 +1,0 @@
-├── middlewares/    # Autenticação, validação de arquivos (Multer, etc.)

@@ -16,3 +16,23 @@ services:
     depends_on:
       - backend     
     restart: always
+
+
+# services:
+#   backend:
+#     build: ./BackEnd
+#     expose:
+#       - "3001"  
+#     environment:
+#       - PORT=3001
+#     restart: always
+
+#   frontend:
+#     build: ./FrontEnd
+#     expose:
+#       - "5173"
+#     tty: true
+#     stdin_open: true
+#     depends_on:
+#       - backend
+#     restart: always
