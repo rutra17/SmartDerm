@@ -1,18 +1,18 @@
 services:
-  # O NOSSO BACK-END
   backend:
     build: ./BackEnd
-    ports:
-      - "5000:5000" 
+    expose:
+      - "3001"      # <--- CORRIGIDO: Agora usa expose como o frontend!
     environment:
-      - PORT=5000   
+      - PORT=3001
     restart: always
 
-  # O NOSSO FRONT-END
   frontend:
     build: ./FrontEnd
-    ports:
-      - "5173:5173"
+    expose:
+      - "5173"
+    tty: true
+    stdin_open: true
     depends_on:
-      - backend     
+      - backend
     restart: always
