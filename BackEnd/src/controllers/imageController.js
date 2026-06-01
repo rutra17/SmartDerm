@@ -2,24 +2,33 @@ import { supabase } from '../services/supabase.js';
 import { analisarImagemComGemini } from '../services/geminiService.js';
 
 export const uploadImage = async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
+    console.log("1. 🚀 Requisição chegou ao Controlador!");
+
+    if (!req.file) {
+        console.error("❌ ERRO: Nenhuma imagem encontrada. O Front-End enviou o campo como 'imagem'?");
+        return res.status(400).json({ error: 'Nenhuma imagem enviada ou nome do campo incorreto.' });
+    }
+    
+    console.log("2. 📦 Imagem capturada na memória!");
 
     try {
-        // 1. RECEBER OS INGREDIENTES DO FRONT-END
         const { userText, aiModel, promptKey, consultaId } = req.body;
+        console.log("3. 📥 Ingredientes recebidos:", { userText, aiModel, promptKey, consultaId });
 
-        console.log("📥 Ingredientes recebidos:", { userText, aiModel, promptKey, consultaId });
-
-        // 2. O PÃO DE CIMA: Buscar a regra do Cientista no Supabase
-        const { data: promptData } = await supabase
+        console.log("4. 🔍 A procurar prompt base no banco de dados...");
+        const { data: promptData, error: promptError } = await supabase
             .from('engenharia_prompts')
             .select('comando_base')
             .eq('chave_identificadora', promptKey || 'padrao')
             .single();
 
+        if (promptError && promptError.code !== 'PGRST116') { 
+            console.error("⚠️ Aviso Supabase (Prompt):", promptError.message);
+        }
+
         const instrucaoBase = promptData ? promptData.comando_base : "Aja como um dermatologista. Analise a imagem.";
 
-        // 3. O RECHEIO: Montar o Sanduíche com o relato do Paciente
+        console.log("5. 🥪 A montar o Sanduíche de Dados (Prompt Final)...");
         let promptFinal = `${instrucaoBase}\n\n`;
 
         if (userText && userText.trim() !== "") {
@@ -27,32 +36,35 @@ export const uploadImage = async (req, res) => {
         } else {
             promptFinal += `INFORMAÇÃO ADICIONAL:\nO paciente não forneceu detalhes textuais, analise apenas a imagem.\n\n`;
         }
-
         promptFinal += `Com base nas instruções acima e no relato, forneça a avaliação técnica da imagem.`;
 
-        // 4. ASSAR O SANDUÍCHE: Enviar tudo para o Gemini
+        console.log("6. 🧠 A enviar para o Gemini (Aguardando IA)...");
         const textoDaIA = await analisarImagemComGemini(
             req.file.buffer,
             req.file.mimetype,
             promptFinal
         );
+        console.log("7. ✅ Laudo gerado com sucesso!");
 
-        // 5. GUARDAR NO PRONTUÁRIO: Salvar a resposta no Supabase
         if (consultaId) {
-            await supabase.from('mensagens').insert([{
+            console.log("8. 💾 A guardar a resposta na tabela 'mensagens'...");
+            const { error: insertError } = await supabase.from('mensagens').insert([{
                 consulta_id: consultaId,
                 role: 'assistant',
                 texto: textoDaIA,
                 ia_utilizada: aiModel || 'gemini',
                 prompt_utilizado: promptKey || 'padrao'
             }]);
+
+            if (insertError) console.error("⚠️ Erro ao salvar mensagem no banco:", insertError.message);
         }
 
-        // 6. ENTREGAR AO PACIENTE
-        res.status(200).json({ resultadoIA: textoDaIA });
+        console.log("9. 🏁 A enviar resposta final para o Front-End!");
+        return res.status(200).json({ resultadoIA: textoDaIA });
 
     } catch (error) {
-        console.error("❌ Erro na montagem do Sanduíche de Dados:", error);
-        res.status(500).json({ error: 'Erro interno ao processar a IA.' });
+        console.error("❌ ERRO FATAL no processo da IA:", error);
+        // ESCUDO 3: Retorno de Erro Garantido
+        return res.status(500).json({ error: 'Erro interno ao processar a IA.' });
     }
 };
