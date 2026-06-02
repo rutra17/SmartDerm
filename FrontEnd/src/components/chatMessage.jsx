@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import './ChatMarkdown.css';
 
 export default function ChatMessage({ message }) {
     const isAssistant = message.role === 'assistant';
@@ -11,7 +13,14 @@ export default function ChatMessage({ message }) {
                 </div>
                 <div className="flex-1 space-y-4">
                     {message.image && <img src={message.image} alt="Anexo médico" className="max-w-xs rounded-lg border border-white/10" />}
-                    <p className="leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                    
+                    {/* 2. A Mágica Acontece Aqui: Trocamos o <p> pelo ReactMarkdown */}
+                    <div className="leading-relaxed markdown-formatado">
+                        <ReactMarkdown>
+                            {message.text}
+                        </ReactMarkdown>
+                    </div>
+
                 </div>
             </div>
         </div>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import ReactMarkdown from 'react-markdown';
+import '../components/ChatMarkdown.css';
 
 function DoctorPanel() {
     const [filaConsultas, setFilaConsultas] = useState([]);
@@ -205,8 +207,10 @@ function DoctorPanel() {
                                 <h3 className="text-lg font-semibold text-emerald-500 mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
                                     <span>🧠</span> Pré-Laudo da IA
                                 </h3>
-                                <div className="flex-1 bg-[#343541] p-4 rounded-lg text-sm text-gray-300 whitespace-pre-wrap overflow-y-auto max-h-[400px]">
-                                    {dadosTriagem.analiseIA}
+                                <div className="flex-1 bg-[#343541] p-4 rounded-lg text-sm text-gray-300 overflow-y-auto max-h-[400px] markdown-formatado">
+                                    <ReactMarkdown>
+                                        {dadosTriagem.analiseIA}
+                                    </ReactMarkdown>
                                 </div>
                             </div>
 
