@@ -3,11 +3,18 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
 import { supabase } from './services/supabase';
 
+// Importação das suas páginas
 import PatientChat from './pages/PatientChat';
 import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 
+// Importação do Componente de Segurança (Garanta que o caminho está correto)
+import ProtectedRoute from './components/ProtectedRoute'; 
+
+// ========================================================
+// COMPONENTE DE LOGIN (Manteve-se a sua lógica perfeita)
+// ========================================================
 function HomeGateway() {
     const navigate = useNavigate();
     const [loginType, setLoginType] = useState(null); 
@@ -17,8 +24,8 @@ function HomeGateway() {
 
     // --- 1. VALIDADOR MATEMÁTICO DE CPF REAL ---
     const validarCPF = (cpf) => {
-        cpf = cpf.replace(/[^\d]+/g, ''); // Remove formatação
-        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; // Bloqueia 111.111.111-11
+        cpf = cpf.replace(/[^\d]+/g, ''); 
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; 
         
         let soma = 0, resto;
         for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
@@ -59,7 +66,6 @@ function HomeGateway() {
         setLoading(true);
         let emailMontado = "";
 
-        // Formata o email do Supabase dependendo do tipo de conta
         if (loginType === 'paciente') {
             const cpfNumeros = identificador.replace(/\D/g, ''); 
             if (!validarCPF(cpfNumeros)) {
@@ -77,7 +83,6 @@ function HomeGateway() {
             emailMontado = `${userFormatado}@cientista.smartderm.com`;
         }
 
-        // Tenta fazer o login real na base de dados
         const { data, error } = await supabase.auth.signInWithPassword({
             email: emailMontado,
             password: senha,
@@ -90,7 +95,6 @@ function HomeGateway() {
             return;
         }
 
-        // Se o login for bem sucedido, direciona para o painel correto
         console.log(`✅ Login de ${loginType} realizado com sucesso!`);
         if (loginType === 'paciente') navigate('/paciente');
         else if (loginType === 'medico') navigate('/medico');
@@ -168,15 +172,35 @@ function HomeGateway() {
     );
 }
 
+// ========================================================
+// DEFINIÇÃO DAS ROTAS COM SEGURANÇA (ProtectedRoute)
+// ========================================================
 function App() {
     return (
         <BrowserRouter>
             <Routes>
+                {/* ROTAS PÚBLICAS */}
                 <Route path="/" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} /> 
-                <Route path="/paciente" element={<PatientChat />} />
-                <Route path="/medico" element={<DoctorPanel />} />
-                <Route path="/cientista" element={<ScientistDashboard />} />
+                
+                {/* ROTAS PROTEGIDAS */}
+                <Route path="/paciente" element={
+                    <ProtectedRoute allowedRoles={['paciente']}>
+                        <PatientChat />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/medico" element={
+                    <ProtectedRoute allowedRoles={['medico']}>
+                        <DoctorPanel />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/cientista" element={
+                    <ProtectedRoute allowedRoles={['cientista']}>
+                        <ScientistDashboard />
+                    </ProtectedRoute>
+                } />
             </Routes>
         </BrowserRouter>
     );

@@ -47,9 +47,11 @@ function PatientChat() {
         const carregarPerfilDoPaciente = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user && user.user_metadata) {
-                const nomeReal = user.user_metadata.nome_completo;
-                const primeiroNome = nomeReal.split(' ')[0]; 
-                setNomePaciente(primeiroNome);
+                const nomeReal = user.user_metadata.nome_completo || user.user_metadata.nome;
+                if (nomeReal) {
+                    const primeiroNome = nomeReal.split(' ')[0]; 
+                    setNomePaciente(primeiroNome);
+                }
             }
         };
         carregarPerfilDoPaciente();
@@ -72,13 +74,11 @@ function PatientChat() {
     // ==========================================
 
     const carregarHistorico = async () => {
-        console.log("📡 Buscando histórico no Supabase...");
         const { data, error } = await supabase.from('consultas').select('*');
 
         if (error) {
             console.error("❌ Erro ao buscar histórico:", error);
         } else if (data) {
-            console.log("✅ Histórico encontrado:", data);
             const historicoInvertido = data.reverse(); 
             setHistory(historicoInvertido);
         }
@@ -106,8 +106,6 @@ function PatientChat() {
     };
 
     const selecionarConsultaAntiga = async (id) => {
-        console.log(`📡 Buscando mensagens para a consulta ID: ${id}...`);
-        
         setConsultaId(id);
         setMessages([]); 
         setLoading(true); 
@@ -120,7 +118,6 @@ function PatientChat() {
         if (error) {
             console.error("❌ Erro ao buscar as mensagens do chat:", error);
         } else if (data) {
-            console.log("✅ Mensagens encontradas no banco:", data);
             const mensagensOrdenadas = data.sort((a, b) => a.id - b.id);
             const mensagensFormatadas = mensagensOrdenadas.map(msg => ({
                 id: msg.id,
@@ -133,10 +130,7 @@ function PatientChat() {
         setLoading(false);
     };
 
-    // Função para ler a imagem, gerar o preview e permitir imagens repetidas
     const handleUpload = (payload) => {
-        // 1. Resolve o Erro no Console: 
-        // Se vier o evento do input, extraímos. Se o ChatInput já mandar o arquivo direto, nós apenas usamos ele.
         const file = payload?.target?.files ? payload.target.files[0] : payload;
 
         if (file) {
@@ -148,9 +142,6 @@ function PatientChat() {
             reader.readAsDataURL(file);
         }
 
-        // 2. Resolve o Bug da Imagem Repetida:
-        // Limpamos a memória do input fantasma instantaneamente. 
-        // Assim, o navegador vai aceitar se você selecionar exatamente a mesma foto de novo!
         if (fileRef.current) {
             fileRef.current.value = '';
         }
@@ -178,7 +169,6 @@ function PatientChat() {
             const fileExt = imageFile.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-            // 1. Upload físico para o Supabase Storage
             const { error: uploadError } = await supabase.storage
                 .from('imagens-medicas')
                 .upload(fileName, imageFile);
@@ -190,7 +180,6 @@ function PatientChat() {
                 
                 urlFinalDaImagem = publicUrlData.publicUrl;
 
-                // 2. Grava a mensagem do USUÁRIO no banco de dados
                 await supabase.from('mensagens').insert([{
                     consulta_id: consultaId,
                     role: 'user',
@@ -198,34 +187,26 @@ function PatientChat() {
                     imagem_url: urlFinalDaImagem 
                 }]);
 
-                // 3. Conexão real com o Back-End / IA
-                // 3. O INTERRUPTOR INTELIGENTE (Gerencia a IA Real vs Simulação)
                 try {
                     let textoFinalRespostaIA = "";
 
                     if (selectedAI === 'simulacao') {
-                        console.log("⚠️ Modo simulação ativo. Pulando o Back-End.");
                         await new Promise(resolve => setTimeout(resolve, 1500)); 
                         textoFinalRespostaIA = `[Modo Simulação] Teste executado com sucesso!\nIA selecionada: ${selectedAI}\nID do Prompt aplicado: ${selectedPrompt}\nSua imagem foi salva de forma isolada na nuvem.`;
                     } else {
-                        console.log(`📡 Conectando ao Back-End usando o modelo: ${selectedAI} e prompt ID: ${selectedPrompt}`);
-                        
-                        // Enviando os parâmetros selecionados no cabeçalho do front para a API local
                         const respostaBackend = await uploadImageToBackend(imageFile, textToSend, selectedAI, selectedPrompt);
                         textoFinalRespostaIA = respostaBackend.resultadoIA; 
                     }
 
-                    // 4. Joga a resposta da IA (ou da simulação) na tela
                     const aiMsg = { id: Date.now(), role: 'assistant', text: textoFinalRespostaIA, image: null };
                     setMessages(prev => [...prev, aiMsg]);
 
-                    // 5. Salva a resposta final de forma permanente no Supabase com os dados do Cientista
                     await supabase.from('mensagens').insert([{
                         consulta_id: consultaId,
                         role: 'assistant',
                         texto: textoFinalRespostaIA,
                         ia_utilizada: selectedAI,
-                        prompt_utilizado: selectedPrompt // Salvando de forma correta para os gráficos
+                        prompt_utilizado: selectedPrompt
                     }]);
 
                 } catch (err) {
@@ -242,7 +223,6 @@ function PatientChat() {
                 console.error("Erro no upload da imagem:", uploadError);
             }
         } else {
-            // Se enviar apenas texto sem imagem
             await supabase.from('mensagens').insert([{ consulta_id: consultaId, role: 'user', texto: textToSend, imagem_url: null }]);
             const avisoMsg = { id: Date.now(), role: 'assistant', text: "Para realizar a triagem, por favor, anexe uma imagem nítida da lesão.", image: null };
             setMessages(prev => [...prev, avisoMsg]);
@@ -251,6 +231,18 @@ function PatientChat() {
         setLoading(false);
         setImageFile(null); 
         setImagePreview(null);
+    };
+
+    // ==========================================
+    // FUNÇÃO DE LOGOUT SEGURO
+    // ==========================================
+    const fazerLogout = async () => {
+        try {
+            await supabase.auth.signOut(); 
+            window.location.replace('/'); 
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+        }
     };
 
     // ==========================================
@@ -303,11 +295,27 @@ function PatientChat() {
             />
             
             <div className="flex-1 flex flex-col relative bg-[#343541]">
+                
+                {/* NOVA BARRA SUPERIOR DE LOGOUT 
+                  Em vez de flutuar (absolute), ela é um bloco que ocupa a parte de cima, 
+                  empurrando o ChatHeader para baixo sem sobrepor nada!
+                */}
+                <div className="w-full flex justify-end px-4 py-3 bg-[#202123] border-b border-gray-700">
+                    <button 
+                        onClick={fazerLogout}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#343541] hover:bg-red-600 border border-gray-600 hover:border-red-500 rounded-lg text-sm font-semibold transition-all text-gray-300 hover:text-white shadow-sm"
+                        title="Sair e encerrar sessão"
+                    >
+                        <span>🚪</span> Sair do Portal
+                    </button>
+                </div>
+
+                {/* O ChatHeader agora fica em segurança logo abaixo */}
                 <ChatHeader selectedAI={selectedAI} setSelectedAI={setSelectedAI} selectedPrompt={selectedPrompt} setSelectedPrompt={setSelectedPrompt} />
                 
                 <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll pb-40">
                     
-                    {/* SAUDAÇÃO PERSONALIZADA (Aparece apenas quando não há consulta selecionada) */}
+                    {/* SAUDAÇÃO PERSONALIZADA */}
                     {!consultaId && messages.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-center p-8 animate-fade-in flex-col gap-4 mt-10">
                             <span className="text-6xl mb-4">👋</span>

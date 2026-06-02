@@ -95,6 +95,18 @@ function DoctorPanel() {
         setCarregando(false);
     };
 
+    // ==========================================
+    // NOVA FUNÇÃO DE LOGOUT SEGURO
+    // ==========================================
+    const fazerLogout = async () => {
+        try {
+            await supabase.auth.signOut(); // Destrói a sessão no Supabase e no navegador
+            window.location.replace('/'); // Redireciona e impede o uso do botão "Voltar" do navegador
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+        }
+    };
+
     return (
         <div className="flex h-screen w-full bg-[#343541] font-sans text-gray-100">
             
@@ -141,8 +153,9 @@ function DoctorPanel() {
                 </div>
                 
                 <div className="p-4 border-t border-white/10">
+                    {/* BOTÃO DE LOGOUT ATUALIZADO */}
                     <button 
-                        onClick={() => window.location.href = '/'}
+                        onClick={fazerLogout}
                         className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition"
                     >
                         Sair do Portal
@@ -174,7 +187,7 @@ function DoctorPanel() {
                         {/* Colunas: Imagem e Análise */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
-                            {/* 4. ALTERAÇÃO: Coluna da Galeria de Imagens */}
+                            {/* Coluna da Galeria de Imagens */}
                             <div className="bg-[#202123] rounded-xl border border-gray-600 p-4 flex flex-col">
                                 <h3 className="text-lg font-semibold text-gray-300 mb-4 border-b border-gray-700 pb-2">
                                     Imagens Submetidas ({dadosTriagem.imagens.length})

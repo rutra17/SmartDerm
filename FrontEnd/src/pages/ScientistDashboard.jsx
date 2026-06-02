@@ -167,6 +167,18 @@ function ScientistPanel() {
 
     const custoMedioPorPaciente = estatisticas.totalConsultas > 0 ? (custoTotalEstimado / estatisticas.totalConsultas) : 0;
 
+    // ==========================================
+    // NOVA FUNÇÃO DE LOGOUT SEGURO
+    // ==========================================
+    const fazerLogout = async () => {
+        try {
+            await supabase.auth.signOut(); // Destrói a sessão no Supabase e no navegador
+            window.location.replace('/'); // Redireciona e impede o uso do botão "Voltar"
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+        }
+    };
+
     return (
         <div className="flex h-screen w-full bg-[#343541] font-sans text-gray-100">
             
@@ -205,7 +217,8 @@ function ScientistPanel() {
                     </button>
                 </div>
                 <div className="p-4 border-t border-white/10">
-                    <button onClick={() => window.location.href = '/'} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition">
+                    {/* BOTÃO DE LOGOUT ATUALIZADO */}
+                    <button onClick={fazerLogout} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition">
                         Sair do Portal
                     </button>
                 </div>
