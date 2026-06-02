@@ -1,20 +1,20 @@
 services:
-  # O NOSSO BACK-END
   backend:
     build: ./BackEnd
-    ports:
-      - "3001:3001" 
+    expose:
+      - "3000"  
     environment:
-      - PORT=3001   
+      - PORT=3000
     restart: always
 
-  # O NOSSO FRONT-END
   frontend:
     build: ./FrontEnd
-    ports:
-      - "5173:5173"
+    expose:
+      - "5173"
+    tty: true
+    stdin_open: true
     depends_on:
-      - backend     
+      - backend
     restart: always
 
 
