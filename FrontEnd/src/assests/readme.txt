@@ -1,0 +1,1 @@
+├── assets/         # Imagens estáticas, ícones

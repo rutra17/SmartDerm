@@ -1,0 +1,8 @@
+Instalando as dependências necessárias para rodar o frontend
+1º Passo - cd FrontEnd
+2º Passo - npm install - vai instalar todas as dependências que estão sendo usadas no atual momento.
+3º Passo - npm run dev - Vai abrir o site localmente
+4º Passo - Criar um arquivo nomeado .env na raiz da pasta FrontEnd
+5º Passo - Adicionar as duas linhas para se conectar ao banco de dados temporário
+VITE_SUPABASE_URL=https://ldxqumejnwtmntfhdjwx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHF1bWVqbnd0bW50Zmhkand4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODgzOTksImV4cCI6MjA5Mzc2NDM5OX0.SWrUON1ED5bSczKviCSsRplO8jei0m2EJKJlSUHw9dg
