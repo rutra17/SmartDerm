@@ -8,6 +8,7 @@ import PatientChat from './pages/PatientChat';
 import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
+import Home from './pages/Home';
 
 // Importação do Componente de Segurança (Garanta que o caminho está correto)
 import ProtectedRoute from './components/ProtectedRoute'; 
@@ -180,8 +181,9 @@ function App() {
         <BrowserRouter>
             <Routes>
                 {/* ROTAS PÚBLICAS */}
-                <Route path="/" element={<HomeGateway />} />
+                <Route path="/" element={<Home />} />
                 <Route path="/cadastro" element={<Register />} /> 
+                <Route path="/login" element={<HomeGateway />} />
                 
                 {/* ROTAS PROTEGIDAS */}
                 <Route path="/paciente" element={
