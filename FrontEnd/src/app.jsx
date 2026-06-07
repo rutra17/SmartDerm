@@ -1,101 +1,83 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
-import { supabase } from './services/supabase';
+import { apiLogin } from './services/api';
 
-// Importação das suas páginas
 import PatientChat from './pages/PatientChat';
 import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Importação do Componente de Segurança (Garanta que o caminho está correto)
-import ProtectedRoute from './components/ProtectedRoute'; 
-
-// ========================================================
-// COMPONENTE DE LOGIN (Manteve-se a sua lógica perfeita)
-// ========================================================
 function HomeGateway() {
     const navigate = useNavigate();
-    const [loginType, setLoginType] = useState(null); 
+    const [loginType, setLoginType] = useState(null);
     const [identificador, setIdentificador] = useState('');
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // --- 1. VALIDADOR MATEMÁTICO DE CPF REAL ---
     const validarCPF = (cpf) => {
-        cpf = cpf.replace(/[^\d]+/g, ''); 
-        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; 
-        
+        cpf = cpf.replace(/[^\d]+/g, '');
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+
         let soma = 0, resto;
         for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
         resto = (soma * 10) % 11;
-        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto === 10 || resto === 11) resto = 0;
         if (resto !== parseInt(cpf.substring(9, 10))) return false;
-        
+
         soma = 0;
         for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
         resto = (soma * 10) % 11;
-        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto === 10 || resto === 11) resto = 0;
         if (resto !== parseInt(cpf.substring(10, 11))) return false;
-        
+
         return true;
     };
 
-    const aplicarMascaraCPF = (valor) => {
-        return valor.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
-    };
-
-    const aplicarMascaraNumerica = (valor) => valor.replace(/\D/g, '').substring(0, 8);
+    const aplicarMascaraCPF = (valor) =>
+        valor.replace(/\D/g, '')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+            .replace(/(-\d{2})\d+?$/, '$1');
 
     const handleIdentificadorChange = (e) => {
-        let valorDigitado = e.target.value;
-        if (loginType === 'paciente') valorDigitado = aplicarMascaraCPF(valorDigitado);
-        else if (loginType === 'medico') valorDigitado = aplicarMascaraNumerica(valorDigitado);
-        setIdentificador(valorDigitado);
+        let v = e.target.value;
+        if (loginType === 'paciente') v = aplicarMascaraCPF(v);
+        else if (loginType === 'medico') v = v.replace(/\D/g, '').substring(0, 8);
+        setIdentificador(v);
     };
 
-    // --- 2. LOGIN UNIFICADO E SEGURO COM O SUPABASE ---
     const handleLogin = async (e) => {
         e.preventDefault();
-        
+
         if (!identificador || !senha) {
-            alert("Por favor, preencha o seu identificador e a senha."); return;
+            alert("Por favor, preencha o identificador e a senha.");
+            return;
+        }
+
+        if (loginType === 'paciente') {
+            const cpf = identificador.replace(/\D/g, '');
+            if (!validarCPF(cpf)) {
+                alert("❌ O CPF introduzido não é válido matematicamente.");
+                return;
+            }
         }
 
         setLoading(true);
-        let emailMontado = "";
 
-        if (loginType === 'paciente') {
-            const cpfNumeros = identificador.replace(/\D/g, ''); 
-            if (!validarCPF(cpfNumeros)) {
-                alert("❌ O CPF introduzido não é válido matematicamente.");
-                setLoading(false); return;
-            }
-            emailMontado = `${cpfNumeros}@paciente.smartderm.com`;
-        } 
-        else if (loginType === 'medico') {
-            const crmNumeros = identificador.replace(/\D/g, '');
-            emailMontado = `${crmNumeros}@medico.smartderm.com`;
-        } 
-        else if (loginType === 'cientista') {
-            const userFormatado = identificador.toLowerCase().replace(/\s/g, '_');
-            emailMontado = `${userFormatado}@cientista.smartderm.com`;
-        }
+        const data = await apiLogin(identificador, loginType, senha);
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: emailMontado,
-            password: senha,
-        });
-
-        if (error) {
-            console.error("Erro no login:", error.message);
-            alert("❌ Credenciais incorretas ou utilizador não registado.");
+        if (data.error) {
+            alert("❌ " + data.error);
             setLoading(false);
             return;
         }
 
-        console.log(`✅ Login de ${loginType} realizado com sucesso!`);
+        localStorage.setItem('smartderm_token', data.token);
+        localStorage.setItem('smartderm_user', JSON.stringify(data.user));
+
         if (loginType === 'paciente') navigate('/paciente');
         else if (loginType === 'medico') navigate('/medico');
         else if (loginType === 'cientista') navigate('/cientista');
@@ -109,24 +91,33 @@ function HomeGateway() {
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 <div>
                     <label className="block text-sm text-gray-400 mb-1">{labelID}</label>
-                    <input 
-                        type="text" required value={identificador} onChange={handleIdentificadorChange} placeholder={placeholderID}
+                    <input
+                        type="text" required value={identificador} onChange={handleIdentificadorChange}
+                        placeholder={placeholderID}
                         className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                 </div>
                 <div>
                     <label className="block text-sm text-gray-400 mb-1">Senha</label>
-                    <input 
-                        type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••••"
+                    <input
+                        type="password" required value={senha} onChange={(e) => setSenha(e.target.value)}
+                        placeholder="••••••••"
                         className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                 </div>
-                
+
                 <div className="flex gap-3 mt-4">
-                    <button type="button" onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }} className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition">
+                    <button
+                        type="button"
+                        onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }}
+                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition"
+                    >
                         Voltar
                     </button>
-                    <button type="submit" disabled={loading} className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}>
+                    <button
+                        type="submit" disabled={loading}
+                        className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                    >
                         {loading ? 'Entrando...' : 'Entrar'}
                     </button>
                 </div>
@@ -144,7 +135,7 @@ function HomeGateway() {
         <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center text-white p-4">
             <h1 className="text-4xl font-bold text-emerald-500 mb-2">SmartDerm AI</h1>
             <p className="text-gray-400 mb-10 text-center">Acesso restrito. Autentique-se para continuar.</p>
-            
+
             {!loginType && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
                     <button onClick={() => setLoginType('paciente')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-emerald-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
@@ -165,37 +156,32 @@ function HomeGateway() {
                 </div>
             )}
 
-            {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
+            {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF", "000.000.000-00")}
             {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
             {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: bruno_admin")}
         </div>
     );
 }
 
-// ========================================================
-// DEFINIÇÃO DAS ROTAS COM SEGURANÇA (ProtectedRoute)
-// ========================================================
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* ROTAS PÚBLICAS */}
                 <Route path="/" element={<HomeGateway />} />
-                <Route path="/cadastro" element={<Register />} /> 
-                
-                {/* ROTAS PROTEGIDAS */}
+                <Route path="/cadastro" element={<Register />} />
+
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>
                         <PatientChat />
                     </ProtectedRoute>
                 } />
-                
+
                 <Route path="/medico" element={
                     <ProtectedRoute allowedRoles={['medico']}>
                         <DoctorPanel />
                     </ProtectedRoute>
                 } />
-                
+
                 <Route path="/cientista" element={
                     <ProtectedRoute allowedRoles={['cientista']}>
                         <ScientistDashboard />

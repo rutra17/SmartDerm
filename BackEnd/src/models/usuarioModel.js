@@ -1,4 +1,4 @@
-// Modelo de usuário — sem ORM, objetos JS puros para o Supabase
+
 
 /**
  * Valida e formata os dados para inserção de um novo usuário.

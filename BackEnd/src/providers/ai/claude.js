@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 /**
  * Analisa uma imagem usando o Claude Opus 4.5.
  * @param {Buffer} imageBuffer
@@ -14,6 +12,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
  */
 export async function analisarImagem(imageBuffer, mimeType, promptFinal) {
     try {
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
         const base64 = imageBuffer.toString('base64');
 
         const response = await client.messages.create({

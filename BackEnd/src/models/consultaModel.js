@@ -1,4 +1,4 @@
-// Modelo de consulta — sem ORM, objetos JS puros para o Supabase
+
 
 /**
  * Valida e formata os dados para inserção de uma nova consulta.

@@ -65,7 +65,9 @@ export async function uploadImagem(buffer, mimeType, nomeArquivo) {
             'Content-Type': mimeType,
         });
 
-        const url = `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${BUCKET}/${nomeArquivo}`;
+        // MINIO_PUBLIC_ENDPOINT é o endereço acessível pelo navegador (localhost em dev)
+        const publicEndpoint = process.env.MINIO_PUBLIC_ENDPOINT || process.env.MINIO_ENDPOINT;
+        const url = `http://${publicEndpoint}:${process.env.MINIO_PORT}/${BUCKET}/${nomeArquivo}`;
         console.log(`📤 Imagem enviada para o MinIO: ${url}`);
         return url;
     } catch (error) {

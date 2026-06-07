@@ -3,12 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// DeepSeek usa a mesma interface da OpenAI com baseURL diferente
-const client = new OpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    baseURL: 'https://api.deepseek.com',
-});
-
 /**
  * Analisa uma imagem usando o DeepSeek Chat.
  * @param {Buffer} imageBuffer
@@ -18,10 +12,15 @@ const client = new OpenAI({
  */
 export async function analisarImagem(imageBuffer, mimeType, promptFinal) {
     try {
+        // DeepSeek usa a mesma interface da OpenAI com baseURL diferente
+        const client = new OpenAI({
+            apiKey: process.env.DEEPSEEK_API_KEY,
+            baseURL: 'https://api.deepseek.com',
+        });
         const base64 = imageBuffer.toString('base64');
 
         const response = await client.chat.completions.create({
-            model: 'deepseek-chat',
+            model: 'deepseek-vl2',
             messages: [
                 {
                     role: 'user',

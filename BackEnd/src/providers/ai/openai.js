@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 /**
  * Analisa uma imagem usando o GPT-4o.
  * @param {Buffer} imageBuffer
@@ -14,6 +12,7 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  */
 export async function analisarImagem(imageBuffer, mimeType, promptFinal) {
     try {
+        const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const base64 = imageBuffer.toString('base64');
 
         const response = await client.chat.completions.create({
