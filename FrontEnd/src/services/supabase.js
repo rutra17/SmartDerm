@@ -1,3 +1,8 @@
-// Supabase removido — autenticação e banco de dados agora são locais.
-// Este arquivo existe apenas para evitar erros de importação residuais.
-// Remova qualquer import deste arquivo que ainda reste no código.
+import { createClient } from '@supabase/supabase-js';
+
+// Puxando as credenciais seguras do arquivo .env
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Inicializando e exportando a conexão
+export const supabase = createClient(supabaseUrl, supabaseKey);

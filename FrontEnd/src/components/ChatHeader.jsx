@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { getPrompts } from '../services/api';
+import { supabase } from '../services/supabase';
 
 function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedPrompt }) {
     const [listaPrompts, setListaPrompts] = useState([]);
 
+    // Carrega os prompts reais do banco de dados ao iniciar o chat
     useEffect(() => {
-        const obterPrompts = async () => {
-            const data = await getPrompts();
-            if (Array.isArray(data)) {
+        const obterPromptsDoBanco = async () => {
+            const { data } = await supabase
+                .from('engenharia_prompts')
+                .select('titulo, chave_identificadora');
+            
+            if (data) {
                 setListaPrompts(data);
-                if (!selectedPrompt) setSelectedPrompt('padrao');
+                // Define o prompt padrão como selecionado inicialmente
+                if (!selectedPrompt) {
+                    setSelectedPrompt('padrao');
+                }
             }
         };
-        obterPrompts();
+        obterPromptsDoBanco();
     }, []);
 
     return (
@@ -22,13 +29,16 @@ function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedProm
                 <h1 className="text-lg font-bold text-white">SmartDerm AI</h1>
             </div>
 
+            {/* Controles de Configuração da IA */}
             <div className="flex items-center gap-4">
+                
+                {/* Seletor de Modelo de IA */}
                 <div className="flex items-center gap-2">
                     <label className="text-xs text-gray-400 font-semibold uppercase">Modelo:</label>
-                    <select
-                        value={selectedAI}
+                    <select 
+                        value={selectedAI} 
                         onChange={(e) => setSelectedAI(e.target.value)}
-                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium"
                     >
                         <option value="gemini">Gemini 2.5 Flash</option>
                         <option value="openai">ChatGPT 4o</option>
@@ -37,12 +47,13 @@ function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedProm
                     </select>
                 </div>
 
+                {/* Seletor Dinâmico de Prompts */}
                 <div className="flex items-center gap-2">
                     <label className="text-xs text-gray-400 font-semibold uppercase">Prompt:</label>
-                    <select
-                        value={selectedPrompt}
+                    <select 
+                        value={selectedPrompt} 
                         onChange={(e) => setSelectedPrompt(e.target.value)}
-                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 max-w-[200px]"
+                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium max-w-[200px]"
                     >
                         {listaPrompts.length === 0 ? (
                             <option value="padrao">Padrão Atual</option>
@@ -55,6 +66,7 @@ function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedProm
                         )}
                     </select>
                 </div>
+
             </div>
         </div>
     );
