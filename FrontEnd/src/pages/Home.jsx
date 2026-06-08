@@ -46,8 +46,7 @@ function Home() {
             <footer className="py-6 border-t border-gray-800">
                 <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-gray-400">© {new Date().getFullYear()} SmartDerm — Todos os direitos reservados</p>
-                    <nav aria-label="Rodapé">
-                    </nav>
+
                 </div>
             </footer>
         </main>
