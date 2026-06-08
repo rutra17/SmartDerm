@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logo from '../assets/img/Smartderm.jfif';
 
 function Home() {
     return (
         <main className="min-h-screen bg-smart-blue text-white flex flex-col" aria-labelledby="home-title">
-            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute top-4 left-4 bg-smart-mint text-black px-3 py-2 rounded">Pular para o conteúdo</a>
+             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-smart-mint text-black px-3 py-2 rounded">Pular para o conteúdo</a>
 
             <header className="py-8 px-4 border-b border-gray-700">
                 <div className="max-w-6xl mx-auto flex items-center justify-between">
-                    <img src="src/assets/img/Smartderm.jfif" alt="Logo da SmartDerm" className="h-12" />
+                    <img src={logo} alt="Logo da SmartDerm" className="h-12" />
                     <nav aria-label="Principal">
                         <ul className="flex gap-4">
                             <li><Link to="/login" className="bg-emerald-500 text-white font-semibold px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-smart-teal transition duration-300 ease-in-out hover:bg-emerald-600">Entrar</Link></li>
