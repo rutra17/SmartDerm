@@ -4,10 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interface IA Dermatológica</title>
-    <script 
-        src="https://cdn.tailwindcss.com">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'smart-blue': '#091A36',
+                        'smart-teal': '#00A4C5',
+                        'smart-mint': '#61E3A9'
+                    }
+                }
+            }
+        }
     </script>
+    
     <style>
+        :root {
+            --smart-blue: #091A36;
+            --smart-teal: #00A4C5;
+            --smart-mint: #61E3A9;
+        }
         body { background-color: #343541; font-family: ui-sans-serif, system-ui, sans-serif; }
         .chat-scroll::-webkit-scrollbar { width: 6px; }
         .chat-scroll::-webkit-scrollbar-track { background: transparent; }

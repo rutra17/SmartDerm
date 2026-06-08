@@ -8,6 +8,7 @@ import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/Home';
 
 function HomeGateway() {
     const navigate = useNavigate();
@@ -119,6 +120,18 @@ function HomeGateway() {
                         className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}
                     >
                         {loading ? 'Entrando...' : 'Entrar'}
+                        type="submit"
+                        disabled={loading}
+                        aria-busy={loading}
+                        className={`flex-1 px-4 py-3 rounded font-semibold transition flex items-center justify-center gap-2 ${loading ? 'bg-emerald-800 text-white cursor-not-allowed' : 'bg-smart-mint text-black hover:bg-emerald-500'}`}>
+                        {loading ? (
+                            <>
+                                <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" aria-hidden="true" />
+                                <span>Entrando...</span>
+                            </>
+                        ) : (
+                            'Entrar'
+                        )}
                     </button>
                 </div>
 
@@ -170,6 +183,12 @@ function App() {
                 <Route path="/" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} />
 
+                {/* ROTAS PÚBLICAS */}
+                <Route path="/" element={<Home />} />
+                <Route path="/cadastro" element={<Register />} /> 
+                <Route path="/login" element={<HomeGateway />} />
+                
+                {/* ROTAS PROTEGIDAS */}
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>
                         <PatientChat />
