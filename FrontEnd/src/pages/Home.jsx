@@ -8,7 +8,7 @@ function Home() {
 
             <header className="py-8 px-4 border-b border-gray-700">
                 <div className="max-w-6xl mx-auto flex items-center justify-between">
-                    <img src="src\assets\img\Smartderm.jfif" alt="Logo da SmartDerm" className="h-12" />
+                    <img src="src/assets/img/Smartderm.jfif" alt="Logo da SmartDerm" className="h-12" />
                     <nav aria-label="Principal">
                         <ul className="flex gap-4">
                             <li><Link to="/login" className="bg-emerald-500 text-white font-semibold px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-smart-teal transition duration-300 ease-in-out hover:bg-emerald-600">Entrar</Link></li>
@@ -46,9 +46,6 @@ function Home() {
                 <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-gray-400">© {new Date().getFullYear()} SmartDerm — Todos os direitos reservados</p>
                     <nav aria-label="Rodapé">
-                        <ul className="flex gap-4">
-                            <li><a href="#" className="text-smart-mint hover:underline">Políticas de Privacidade</a></li>
-                        </ul>
                     </nav>
                 </div>
             </footer>
