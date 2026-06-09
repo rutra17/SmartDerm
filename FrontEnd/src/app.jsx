@@ -116,14 +116,11 @@ function HomeGateway() {
                         Voltar
                     </button>
                     <button
-                        type="submit" disabled={loading}
-                        className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}
-                    >
-                        {loading ? 'Entrando...' : 'Entrar'}
                         type="submit"
                         disabled={loading}
                         aria-busy={loading}
-                        className={`flex-1 px-4 py-3 rounded font-semibold transition flex items-center justify-center gap-2 ${loading ? 'bg-emerald-800 text-white cursor-not-allowed' : 'bg-smart-mint text-black hover:bg-emerald-500'}`}>
+                        className={`flex-1 px-4 py-3 rounded font-semibold transition flex items-center justify-center gap-2 ${loading ? 'bg-emerald-800 text-white cursor-not-allowed' : 'bg-smart-mint text-black hover:bg-emerald-500'}`}
+                    >
                         {loading ? (
                             <>
                                 <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" aria-hidden="true" />
