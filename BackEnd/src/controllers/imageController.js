@@ -1,70 +1,68 @@
-import { supabase } from '../services/supabase.js';
-import { analisarImagemComGemini } from '../services/geminiService.js';
+import pool from '../services/database.js';
+import { getProviderIA } from '../providers/ai/index.js';
+import { uploadImagem, gerarNomeArquivo } from '../providers/storage/index.js';
 
 export const uploadImage = async (req, res) => {
     console.log("1. 🚀 Requisição chegou ao Controlador!");
 
     if (!req.file) {
-        console.error("❌ ERRO: Nenhuma imagem encontrada. O Front-End enviou o campo como 'imagem'?");
         return res.status(400).json({ error: 'Nenhuma imagem enviada ou nome do campo incorreto.' });
     }
-    
-    console.log("2. 📦 Imagem capturada na memória!");
 
     try {
         const { userText, aiModel, promptKey, consultaId } = req.body;
-        console.log("3. 📥 Ingredientes recebidos:", { userText, aiModel, promptKey, consultaId });
+        console.log("2. 📥 Ingredientes recebidos:", { userText, aiModel, promptKey, consultaId });
 
-        console.log("4. 🔍 A procurar prompt base no banco de dados...");
-        const { data: promptData, error: promptError } = await supabase
-            .from('engenharia_prompts')
-            .select('comando_base')
-            .eq('chave_identificadora', promptKey || 'padrao')
-            .single();
+        console.log("3. 📤 A fazer upload da imagem para o MinIO...");
+        const nomeArquivo = gerarNomeArquivo(req.file.mimetype);
+        const imagemUrl = await uploadImagem(req.file.buffer, req.file.mimetype, nomeArquivo);
+        console.log("4. ✅ Upload concluído! URL:", imagemUrl);
 
-        if (promptError && promptError.code !== 'PGRST116') { 
-            console.error("⚠️ Aviso Supabase (Prompt):", promptError.message);
+        // Salva a mensagem do usuário no banco
+        if (consultaId) {
+            const textoUsuario = userText && userText.trim() ? userText.trim() : "Imagem enviada para triagem.";
+            await pool.query(
+                `INSERT INTO mensagens (consulta_id, role, texto, imagem_url)
+                 VALUES ($1, 'user', $2, $3)`,
+                [consultaId, textoUsuario, imagemUrl]
+            );
         }
 
-        const instrucaoBase = promptData ? promptData.comando_base : "Aja como um dermatologista. Analise a imagem.";
+        console.log("5. 🔍 A procurar prompt base no banco...");
+        const promptResult = await pool.query(
+            'SELECT comando_base FROM engenharia_prompts WHERE chave_identificadora = $1',
+            [promptKey || 'padrao']
+        );
 
-        console.log("5. 🥪 A montar o Sanduíche de Dados (Prompt Final)...");
+        const instrucaoBase = promptResult.rows[0]
+            ? promptResult.rows[0].comando_base
+            : "Aja como um dermatologista. Analise a imagem.";
+
         let promptFinal = `${instrucaoBase}\n\n`;
-
-        if (userText && userText.trim() !== "") {
+        if (userText && userText.trim()) {
             promptFinal += `RELATO DO PACIENTE:\n"${userText.trim()}"\n\n`;
         } else {
             promptFinal += `INFORMAÇÃO ADICIONAL:\nO paciente não forneceu detalhes textuais, analise apenas a imagem.\n\n`;
         }
         promptFinal += `Com base nas instruções acima e no relato, forneça a avaliação técnica da imagem.`;
 
-        console.log("6. 🧠 A enviar para o Gemini (Aguardando IA)...");
-        const textoDaIA = await analisarImagemComGemini(
-            req.file.buffer,
-            req.file.mimetype,
-            promptFinal
-        );
-        console.log("7. ✅ Laudo gerado com sucesso!");
+        console.log("6. 🧠 A enviar para a IA:", aiModel || 'gemini');
+        const analisarImagem = getProviderIA(aiModel);
+        const textoDaIA = await analisarImagem(req.file.buffer, req.file.mimetype, promptFinal);
+        console.log("7. ✅ Laudo gerado!");
 
         if (consultaId) {
-            console.log("8. 💾 A guardar a resposta na tabela 'mensagens'...");
-            const { error: insertError } = await supabase.from('mensagens').insert([{
-                consulta_id: consultaId,
-                role: 'assistant',
-                texto: textoDaIA,
-                ia_utilizada: aiModel || 'gemini',
-                prompt_utilizado: promptKey || 'padrao'
-            }]);
-
-            if (insertError) console.error("⚠️ Erro ao salvar mensagem no banco:", insertError.message);
+            await pool.query(
+                `INSERT INTO mensagens (consulta_id, role, texto, ia_utilizada, prompt_utilizado)
+                 VALUES ($1, 'assistant', $2, $3, $4)`,
+                [consultaId, textoDaIA, aiModel || 'gemini', promptKey || 'padrao']
+            );
         }
 
-        console.log("9. 🏁 A enviar resposta final para o Front-End!");
-        return res.status(200).json({ resultadoIA: textoDaIA });
+        return res.status(200).json({ resultadoIA: textoDaIA, imagemUrl });
 
     } catch (error) {
-        console.error("❌ ERRO FATAL no processo da IA:", error);
-        // ESCUDO 3: Retorno de Erro Garantido
+        console.error("❌ ERRO FATAL:", error);
         return res.status(500).json({ error: 'Erro interno ao processar a IA.' });
     }
 };

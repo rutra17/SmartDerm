@@ -1,39 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../services/supabase';
+import { apiRegister } from '../services/api';
 
 function Register() {
     const navigate = useNavigate();
-    
-    // --- ESTADOS DA CONTA ---
+
     const [tipoConta, setTipoConta] = useState('paciente');
     const [identificador, setIdentificador] = useState('');
     const [nomeCompleto, setNomeCompleto] = useState('');
     const [senha, setSenha] = useState('');
     const [codigoAutorizacao, setCodigoAutorizacao] = useState('');
     const [genero, setGenero] = useState('');
-    
-    // --- ESTADOS DO ENDEREÇO ---
+
     const [cep, setCep] = useState('');
     const [rua, setRua] = useState('');
     const [numero, setNumero] = useState('');
     const [bairro, setBairro] = useState('');
     const [cidade, setCidade] = useState('');
     const [estado, setEstado] = useState('');
-    const [cepStatus, setCepStatus] = useState(''); // Feedback para o utilizador
+    const [cepStatus, setCepStatus] = useState('');
 
     const [loading, setLoading] = useState(false);
 
-    // --- CHAVES DE SEGURANÇA ---
-    const CHAVE_MEDICO = "MEDICO2026";
-    const CHAVE_CIENTISTA = "DATAADMIN2026";
-
-    // ==========================================
-    // 1. MÁSCARAS E FORMATAÇÕES
-    // ==========================================
-    const aplicarMascaraCPF = (valor) => {
-        return valor.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
-    };
+    const aplicarMascaraCPF = (valor) =>
+        valor.replace(/\D/g, '')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+            .replace(/(-\d{2})\d+?$/, '$1');
 
     const handleIdentificadorChange = (e) => {
         let valor = e.target.value;
@@ -42,20 +36,10 @@ function Register() {
         setIdentificador(valor);
     };
 
-    // ==========================================
-    // 2. BUSCA INTELIGENTE DE CEP (ViaCEP)
-    // ==========================================
     const handleCepChange = async (e) => {
         let valor = e.target.value;
         const cepLimpo = valor.replace(/\D/g, '');
-        
-        // Aplica a máscara 00000-000 visualmente
-        if (cepLimpo.length > 5) {
-            valor = cepLimpo.replace(/^(\d{5})(\d)/, "$1-$2");
-        } else {
-            valor = cepLimpo;
-        }
-        
+        valor = cepLimpo.length > 5 ? cepLimpo.replace(/^(\d{5})(\d)/, "$1-$2") : cepLimpo;
         setCep(valor);
 
         if (cepLimpo.length === 8) {
@@ -70,77 +54,38 @@ function Register() {
                     return;
                 }
 
-                // Preenche os campos
                 setRua(data.logradouro);
                 setBairro(data.bairro);
                 setCidade(data.localidade);
                 setEstado(data.uf);
                 setCepStatus('✅ Encontrado');
-                
-                // Salta o foco para o número
                 document.getElementById('numero-input')?.focus();
-
-            } catch (error) {
+            } catch {
                 setCepStatus('❌ Erro na busca');
             }
         } else {
-            setCepStatus(''); // Limpa o status se o CEP estiver incompleto
+            setCepStatus('');
         }
     };
 
-    // ==========================================
-    // 3. REGISTO NO SUPABASE
-    // ==========================================
     const handleCadastro = async (e) => {
         e.preventDefault();
-
-        // Verificação de Segurança
-        if (tipoConta === 'medico' && codigoAutorizacao !== CHAVE_MEDICO) {
-            alert("❌ Código de Médico inválido! Solicite o token correto à administração.");
-            return;
-        }
-        if (tipoConta === 'cientista' && codigoAutorizacao !== CHAVE_CIENTISTA) {
-            alert("❌ Código de Pesquisador/Cientista inválido! Acesso negado.");
-            return;
-        }
-
         setLoading(true);
-        let emailMontado = "";
 
-        // Montagem do Email do Supabase
-        if (tipoConta === 'paciente') {
-            const cpf = identificador.replace(/\D/g, '');
-            if (cpf.length !== 11) { alert("CPF incompleto!"); setLoading(false); return; }
-            emailMontado = `${cpf}@paciente.smartderm.com`;
-        } else if (tipoConta === 'medico') {
-            emailMontado = `${identificador}@medico.smartderm.com`;
-        } else if (tipoConta === 'cientista') {
-            const user = identificador.toLowerCase().replace(/\s/g, '_');
-            emailMontado = `${user}@cientista.smartderm.com`;
-        }
-
-        // Formata o endereço final
         const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}, CEP: ${cep}`;
 
-        // Cadastrar no Supabase Auth com todos os MetaDados
-        const { data, error } = await supabase.auth.signUp({
-            email: emailMontado,
-            password: senha,
-            options: {
-                data: {
-                    nome: nomeCompleto,
-                    tipo_conta: tipoConta,
-                    genero: genero,
-                    cep: cep,
-                    endereco_completo: enderecoCompleto,
-                    cidade_estado: `${cidade}/${estado}`
-                }
-            }
+        const data = await apiRegister({
+            nome: nomeCompleto,
+            tipo_conta: tipoConta,
+            identificador,
+            senha,
+            genero,
+            endereco: enderecoCompleto,
+            codigo_autorizacao: codigoAutorizacao,
         });
 
-        if (error) {
-            console.error("Erro no cadastro:", error);
-            alert("Erro ao criar conta. Talvez este utilizador já exista.");
+        if (data.error) {
+            alert("❌ " + data.error);
             setLoading(false);
             return;
         }
@@ -150,41 +95,37 @@ function Register() {
         setLoading(false);
     };
 
-    // ==========================================
-    // 4. RENDERIZAÇÃO DA INTERFACE
-    // ==========================================
     return (
         <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center p-4 font-sans py-10">
-            {/* Aumentei a largura máxima de max-w-md para max-w-2xl para acomodar os campos lado a lado */}
             <div className="bg-[#343541] w-full max-w-2xl rounded-2xl shadow-2xl p-8 border border-gray-700">
-                
+
                 <h2 className="text-2xl font-bold text-white mb-2 text-center">Novo Registo</h2>
                 <p className="text-gray-400 text-sm text-center mb-6">Crie a sua conta no SmartDerm AI</p>
 
                 <form onSubmit={handleCadastro} className="space-y-5">
-                    
-                    {/* TIPO DE CONTA E CHAVE DE SEGURANÇA */}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Tipo de Conta</label>
-                            <select 
-                                value={tipoConta} 
+                            <select
+                                value={tipoConta}
                                 onChange={(e) => { setTipoConta(e.target.value); setIdentificador(''); setCodigoAutorizacao(''); }}
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
                             >
                                 <option value="paciente">👤 Paciente</option>
                                 <option value="medico">🩺 Médico Especialista</option>
-                                <option value="cientista">🔬 Cientista de Dados (Pesquisa)</option>
+                                <option value="cientista">🔬 Cientista de Dados</option>
                             </select>
                         </div>
 
                         {tipoConta !== 'paciente' ? (
-                            <div className="animate-fade-in">
+                            <div>
                                 <label className="block text-xs text-red-400 mb-1 font-semibold uppercase">
                                     Token de {tipoConta === 'medico' ? 'Médico' : 'Pesquisa'}
                                 </label>
-                                <input 
-                                    type="password" required value={codigoAutorizacao} onChange={(e) => setCodigoAutorizacao(e.target.value)}
+                                <input
+                                    type="password" required value={codigoAutorizacao}
+                                    onChange={(e) => setCodigoAutorizacao(e.target.value)}
                                     placeholder="Insira a chave de acesso..."
                                     className="w-full bg-red-500/10 border border-red-500/50 rounded p-3 text-white focus:outline-none focus:border-red-500"
                                 />
@@ -192,18 +133,18 @@ function Register() {
                         ) : <div className="hidden md:block"></div>}
                     </div>
 
-                    {/* DADOS PESSOAIS */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Nome Completo</label>
-                            <input 
-                                type="text" required value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva"
+                            <input
+                                type="text" required value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)}
+                                placeholder="Ex: João da Silva"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Gênero</label>
-                            <select 
+                            <select
                                 required value={genero} onChange={(e) => setGenero(e.target.value)}
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             >
@@ -216,13 +157,12 @@ function Register() {
                         </div>
                     </div>
 
-                    {/* IDENTIFICAÇÃO E SENHA */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">
-                                {tipoConta === 'paciente' ? 'CPF' : tipoConta === 'medico' ? 'Registro CRN/CRM' : 'Nome de Usuário (ID)'}
+                                {tipoConta === 'paciente' ? 'CPF' : tipoConta === 'medico' ? 'Registro CRN/CRM' : 'Nome de Usuário'}
                             </label>
-                            <input 
+                            <input
                                 type="text" required value={identificador} onChange={handleIdentificadorChange}
                                 placeholder={tipoConta === 'paciente' ? '000.000.000-00' : tipoConta === 'medico' ? 'Apenas números' : 'Ex: admin_bruno'}
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 font-mono"
@@ -230,62 +170,65 @@ function Register() {
                         </div>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Senha de Acesso</label>
-                            <input 
-                                type="password" required minLength="6" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo de 6 caracteres"
+                            <input
+                                type="password" required minLength="6" value={senha}
+                                onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo de 6 caracteres"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                     </div>
 
                     <hr className="border-gray-700 my-4" />
-                    
                     <h3 className="text-sm font-semibold text-emerald-500 mb-2">Dados de Endereço</h3>
 
-                    {/* ENDEREÇO LINHA 1 */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="relative">
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">CEP</label>
-                            <input 
-                                type="text" required maxLength="9" value={cep} onChange={handleCepChange} placeholder="00000-000"
+                            <input
+                                type="text" required maxLength="9" value={cep} onChange={handleCepChange}
+                                placeholder="00000-000"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                             {cepStatus && <span className="absolute right-3 top-[34px] text-xs font-semibold text-gray-300">{cepStatus}</span>}
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Rua / Logradouro</label>
-                            <input 
-                                type="text" required value={rua} onChange={(e) => setRua(e.target.value)} placeholder="Avenida Brasil"
+                            <input
+                                type="text" required value={rua} onChange={(e) => setRua(e.target.value)}
+                                placeholder="Avenida Brasil"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                     </div>
 
-                    {/* ENDEREÇO LINHA 2 */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Número</label>
-                            <input 
-                                id="numero-input" type="text" required value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="123"
+                            <input
+                                id="numero-input" type="text" required value={numero}
+                                onChange={(e) => setNumero(e.target.value)} placeholder="123"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Bairro</label>
-                            <input 
-                                type="text" required value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Centro"
+                            <input
+                                type="text" required value={bairro} onChange={(e) => setBairro(e.target.value)}
+                                placeholder="Centro"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Cidade / UF</label>
-                            <input 
-                                type="text" required value={cidade ? `${cidade} - ${estado}` : ''} readOnly placeholder="São Paulo - SP"
+                            <input
+                                type="text" required value={cidade ? `${cidade} - ${estado}` : ''} readOnly
+                                placeholder="São Paulo - SP"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-gray-400 cursor-not-allowed outline-none"
                             />
                         </div>
                     </div>
 
-                    <button 
+                    <button
                         type="submit" disabled={loading}
                         className="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-bold text-lg shadow-lg transition disabled:opacity-50"
                     >
@@ -298,7 +241,6 @@ function Register() {
                         ← Voltar para o Login
                     </Link>
                 </div>
-
             </div>
         </div>
     );
