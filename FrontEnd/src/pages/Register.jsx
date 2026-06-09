@@ -72,27 +72,32 @@ function Register() {
         e.preventDefault();
         setLoading(true);
 
-        const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}, CEP: ${cep}`;
+        try {
+            const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}, CEP: ${cep}`;
 
-        const data = await apiRegister({
-            nome: nomeCompleto,
-            tipo_conta: tipoConta,
-            identificador,
-            senha,
-            genero,
-            endereco: enderecoCompleto,
-            codigo_autorizacao: codigoAutorizacao,
-        });
+            const data = await apiRegister({
+                nome: nomeCompleto,
+                tipo_conta: tipoConta,
+                identificador,
+                senha,
+                genero,
+                endereco: enderecoCompleto,
+                codigo_autorizacao: codigoAutorizacao,
+            });
 
-        if (data.error) {
-            alert("❌ " + data.error);
+            if (data.error) {
+                alert("❌ " + data.error);
+                return;
+            }
+
+            alert(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso! Já pode fazer o login.`);
+            navigate('/');
+        } catch (err) {
+            alert("❌ Erro de conexão com o servidor. Tente novamente.");
+            console.error(err);
+        } finally {
             setLoading(false);
-            return;
         }
-
-        alert(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso! Já pode fazer o login.`);
-        navigate('/');
-        setLoading(false);
     };
 
     return (
