@@ -4,7 +4,7 @@ import logo from '../assets/img/Smartderm.jfif';
 
 function Home() {
     return (
-        <main className="min-h-screen bg-smart-blue text-white flex flex-col" aria-labelledby="home-title">
+        <main className="min-h-screen bg-gray-700 text-white flex flex-col" aria-labelledby="home-title">
              <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-smart-mint text-black px-3 py-2 rounded">Pular para o conteúdo</a>
 
             <header className="py-8 px-4 border-b border-gray-700">
@@ -30,7 +30,7 @@ function Home() {
                         </div>
 
                         <ul className="mt-8 space-y-3 text-gray-300">
-                            <li><strong>Design acessível:</strong> interface com alto contraste, navegação por teclado e suporte a leitores de tela — pensada para ser usada por qualquer pessoa.</li>
+                            <li><strong>Análise inteligente de imagens:</strong> utilize inteligência artificial para identificar padrões visuais em lesões dermatológicas, fornecendo informações detalhadas que auxiliam na avaliação clínica e na tomada de decisão.</li>
                             <li><strong>Análises além do sim/não:</strong> o SmartDerm examina imagens e aponta sinais visuais relevantes, entregando um resultado claro e descritivo em vez de apenas "positivo/negativo".</li>
                             <li><strong>Laudos que fazem sentido:</strong> cada relatório traz explicações visuais e textuais que ajudam você e o profissional de saúde a entender o que foi observado.</li>
                         </ul>
