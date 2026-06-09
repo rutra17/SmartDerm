@@ -23,7 +23,7 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
       - "5050:5050"
-      - "9001:9001"
+      - "5070:5070"
     volumes:
       - minio_data:/data
 
