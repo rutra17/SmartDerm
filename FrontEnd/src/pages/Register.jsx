@@ -22,9 +22,6 @@ function Register() {
 
     const [loading, setLoading] = useState(false);
 
-    const CHAVE_MEDICO = "MEDICO2026";
-    const CHAVE_CIENTISTA = "DATAADMIN2026";
-
     const aplicarMascaraCPF = (valor) =>
         valor.replace(/\D/g, '')
             .replace(/(\d{3})(\d)/, '$1.$2')
@@ -73,16 +70,6 @@ function Register() {
 
     const handleCadastro = async (e) => {
         e.preventDefault();
-
-        if (tipoConta === 'medico' && codigoAutorizacao !== CHAVE_MEDICO) {
-            alert("❌ Código de Médico inválido!");
-            return;
-        }
-        if (tipoConta === 'cientista' && codigoAutorizacao !== CHAVE_CIENTISTA) {
-            alert("❌ Código de Pesquisador inválido!");
-            return;
-        }
-
         setLoading(true);
 
         const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}, CEP: ${cep}`;
@@ -94,6 +81,7 @@ function Register() {
             senha,
             genero,
             endereco: enderecoCompleto,
+            codigo_autorizacao: codigoAutorizacao,
         });
 
         if (data.error) {

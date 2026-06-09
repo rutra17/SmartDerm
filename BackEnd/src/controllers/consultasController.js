@@ -2,7 +2,15 @@ import pool from '../services/database.js';
 
 export const listarConsultas = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM consultas ORDER BY created_at DESC');
+        let result;
+        if (req.usuario.tipo_conta === 'paciente') {
+            result = await pool.query(
+                'SELECT * FROM consultas WHERE paciente_id = $1 ORDER BY created_at DESC',
+                [req.usuario.id]
+            );
+        } else {
+            result = await pool.query('SELECT * FROM consultas ORDER BY created_at DESC');
+        }
         return res.json(result.rows);
     } catch (error) {
         console.error('Erro ao listar consultas:', error);
@@ -11,16 +19,12 @@ export const listarConsultas = async (req, res) => {
 };
 
 export const criarConsulta = async (req, res) => {
-    const { nome_paciente } = req.body;
-
-    if (!nome_paciente) {
-        return res.status(400).json({ error: 'Nome do paciente obrigatório.' });
-    }
+    const nome_paciente = req.body.nome_paciente || req.usuario.nome;
 
     try {
         const result = await pool.query(
-            'INSERT INTO consultas (nome_paciente) VALUES ($1) RETURNING *',
-            [nome_paciente]
+            'INSERT INTO consultas (nome_paciente, paciente_id) VALUES ($1, $2) RETURNING *',
+            [nome_paciente, req.usuario.id]
         );
         return res.status(201).json(result.rows[0]);
     } catch (error) {

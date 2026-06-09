@@ -53,9 +53,9 @@ export const uploadImage = async (req, res) => {
 
         if (consultaId) {
             await pool.query(
-                `INSERT INTO mensagens (consulta_id, role, texto, ia_utilizada, prompt_utilizado, imagem_url)
-                 VALUES ($1, 'assistant', $2, $3, $4, $5)`,
-                [consultaId, textoDaIA, aiModel || 'gemini', promptKey || 'padrao', imagemUrl]
+                `INSERT INTO mensagens (consulta_id, role, texto, ia_utilizada, prompt_utilizado)
+                 VALUES ($1, 'assistant', $2, $3, $4)`,
+                [consultaId, textoDaIA, aiModel || 'gemini', promptKey || 'padrao']
             );
         }
 
