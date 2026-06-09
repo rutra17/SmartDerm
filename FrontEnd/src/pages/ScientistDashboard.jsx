@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getConsultas, getMensagens, getPrompts, criarPrompt, atualizarPrompt, excluirPromptAPI } from '../services/api';
+import { getStats, getPrompts, criarPrompt, atualizarPrompt, excluirPromptAPI } from '../services/api';
 
 function ScientistPanel() {
     const [carregando, setCarregando] = useState(true);
@@ -35,47 +35,16 @@ function ScientistPanel() {
     const carregarDadosEstatisticos = async () => {
         setCarregando(true);
         try {
-            const consultas = await getConsultas();
-
-            let contagemModelos = {};
-            let contagemPrompts = {};
-            let contagemStatus = { pendente: 0, finalizada: 0 };
-            let totalDeImagens = 0;
-            let totalDeIA = 0;
-
-            if (Array.isArray(consultas)) {
-                consultas.forEach(c => {
-                    const status = c.status || 'pendente';
-                    contagemStatus[status] = (contagemStatus[status] || 0) + 1;
-                });
-            }
-
-            // Busca mensagens de todas as consultas
-            if (Array.isArray(consultas)) {
-                for (const consulta of consultas) {
-                    const mensagens = await getMensagens(consulta.id);
-                    if (Array.isArray(mensagens)) {
-                        mensagens.forEach(msg => {
-                            if (msg.imagem_url) totalDeImagens++;
-                            if (msg.role === 'assistant' && msg.ia_utilizada) {
-                                totalDeIA++;
-                                const modelo = msg.ia_utilizada || 'Desconhecido';
-                                contagemModelos[modelo] = (contagemModelos[modelo] || 0) + 1;
-                                const prompt = msg.prompt_utilizado || 'Padrão';
-                                contagemPrompts[prompt] = (contagemPrompts[prompt] || 0) + 1;
-                            }
-                        });
-                    }
-                }
-            }
+            const data = await getStats();
+            if (data.error) throw new Error(data.error);
 
             setEstatisticas({
-                totalConsultas: Array.isArray(consultas) ? consultas.length : 0,
-                totalMensagensIA: totalDeIA,
-                totalImagens: totalDeImagens,
-                statusConsultas: contagemStatus,
-                modelosIA: contagemModelos,
-                promptsUtilizados: contagemPrompts,
+                totalConsultas: data.total_consultas,
+                totalMensagensIA: data.total_ia,
+                totalImagens: data.total_imagens,
+                statusConsultas: data.status_consultas,
+                modelosIA: data.modelos_ia,
+                promptsUtilizados: data.prompts_utilizados,
             });
         } catch (error) {
             console.error("Erro estatísticas:", error);

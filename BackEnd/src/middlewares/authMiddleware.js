@@ -18,3 +18,10 @@ export const autenticar = (req, res, next) => {
         return res.status(401).json({ error: 'Token inválido ou expirado.' });
     }
 };
+
+export const autorizar = (...roles) => (req, res, next) => {
+    if (!roles.includes(req.usuario?.tipo_conta)) {
+        return res.status(403).json({ error: 'Acesso negado. Permissão insuficiente.' });
+    }
+    next();
+};

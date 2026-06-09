@@ -47,7 +47,9 @@ services:
       - MINIO_BUCKET=smartderm
       - MINIO_PUBLIC_ENDPOINT=localhost
       - JWT_SECRET=smartderm_jwt_secret_2026
-      - GEMINI_API_KEY=sua_chave_aqui
+      - CODIGO_MEDICO=MEDICO2026
+      - CODIGO_CIENTISTA=DATAADMIN2026
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DEEPSEEK_API_KEY=sua_chave_aqui
       - OPENAI_API_KEY=sua_chave_aqui
       - ANTHROPIC_API_KEY=sua_chave_aqui

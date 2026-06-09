@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import consultasRoutes from './routes/consultasRoutes.js';
 import mensagensRoutes from './routes/mensagensRoutes.js';
 import promptsRoutes from './routes/promptsRoutes.js';
+import statsRoutes from './routes/statsRoutes.js';
 import { inicializarBanco } from './database/init.js';
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/consultas', consultasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/prompts', promptsRoutes);
+app.use('/api/stats', statsRoutes);
 
 inicializarBanco()
     .then(() => {

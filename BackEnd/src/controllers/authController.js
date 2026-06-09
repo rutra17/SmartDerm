@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smartderm_secret_dev';
+const CODIGO_MEDICO = process.env.CODIGO_MEDICO || 'MEDICO2026';
+const CODIGO_CIENTISTA = process.env.CODIGO_CIENTISTA || 'DATAADMIN2026';
 
 function montarEmail(identificador, tipo_conta) {
     if (tipo_conta === 'paciente') {
@@ -20,10 +22,17 @@ function montarEmail(identificador, tipo_conta) {
 }
 
 export const register = async (req, res) => {
-    const { nome, tipo_conta, identificador, senha, genero, endereco } = req.body;
+    const { nome, tipo_conta, identificador, senha, genero, endereco, codigo_autorizacao } = req.body;
 
     if (!nome || !tipo_conta || !identificador || !senha) {
         return res.status(400).json({ error: 'Campos obrigatórios faltando.' });
+    }
+
+    if (tipo_conta === 'medico' && codigo_autorizacao !== CODIGO_MEDICO) {
+        return res.status(403).json({ error: 'Código de autorização de médico inválido.' });
+    }
+    if (tipo_conta === 'cientista' && codigo_autorizacao !== CODIGO_CIENTISTA) {
+        return res.status(403).json({ error: 'Código de autorização de pesquisador inválido.' });
     }
 
     const email = montarEmail(identificador, tipo_conta);

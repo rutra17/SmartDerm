@@ -37,11 +37,11 @@ export const getConsultas = async () => {
     return res.json();
 };
 
-export const criarConsulta = async (nome_paciente) => {
+export const criarConsulta = async () => {
     const res = await fetch(`${BASE_URL}/consultas`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ nome_paciente }),
+        body: JSON.stringify({}),
     });
     return res.json();
 };
@@ -103,6 +103,13 @@ export const excluirPromptAPI = async (id) => {
         method: 'DELETE',
         headers: authHeaders(),
     });
+    return res.json();
+};
+
+// ─── Estatísticas ─────────────────────────────────────────────────────────────
+
+export const getStats = async () => {
+    const res = await fetch(`${BASE_URL}/stats`, { headers: authHeaders() });
     return res.json();
 };
 
