@@ -1,0 +1,18 @@
+/* FrontEnd/src/styles/theme.css */
+:root {
+  /* Tons de Azul (Sóbrio/Confiança) */
+  --primary-color: #0056b3; 
+  --primary-dark: #0f172a;
+  
+  /* Tons de Verde da Logo (Clínico/Precisão) */
+  --accent-green: #10b981;
+  --accent-green-light: #dcfce7;
+  --accent-green-dark: #15803d;
+
+  /* Cores Neutras para um Visual Clean */
+  --bg-clean: #f4f7f6;
+  --bg-card: #ffffff;
+  --text-main: #2d3748;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
