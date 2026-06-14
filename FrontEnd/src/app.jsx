@@ -10,6 +10,7 @@ import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 import Home from './pages/Home';
+import AdminPage from './pages/AdminPage';
 
 // Importação do Componente de Segurança (Garanta que o caminho está correto)
 import ProtectedRoute from './components/ProtectedRoute'; 
