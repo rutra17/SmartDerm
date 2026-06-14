@@ -8,6 +8,7 @@ import mensagensRoutes from './routes/mensagensRoutes.js';
 import promptsRoutes from './routes/promptsRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import { inicializarBanco } from './database/init.js';
+import convitesRoutes from './routes/convites.routes.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use('/api/consultas', consultasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/prompts', promptsRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/convites', convitesRoutes);
 
 inicializarBanco()
     .then(() => {
