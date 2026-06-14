@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
 import { supabase } from './services/supabase';
+import './styles/theme.css';
 
 // Importação das suas páginas
 import PatientChat from './pages/PatientChat';
