@@ -45,6 +45,14 @@ export const inicializarBanco = async () => {
                 created_at TIMESTAMPTZ DEFAULT NOW()
             );
 
+            CREATE TABLE IF NOT EXISTS codigos_convite (
+                id SERIAL PRIMARY KEY,
+                codigo VARCHAR(50) UNIQUE NOT NULL,
+                identificacao VARCHAR(255) NOT NULL,
+                status VARCHAR(50) DEFAULT 'Ativo',
+                criado_em TIMESTAMPTZ DEFAULT NOW()
+            );
+
             INSERT INTO engenharia_prompts (titulo, chave_identificadora, comando_base)
             VALUES ('Padrão Dermatológico', 'padrao', 'Aja como um dermatologista especialista. Analise a imagem dermatológica fornecida e descreva as características visuais observadas, possíveis diagnósticos diferenciais e recomendações de conduta clínica. Seja técnico, preciso e objetivo.')
             ON CONFLICT (chave_identificadora) DO NOTHING;
