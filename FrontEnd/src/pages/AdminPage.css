@@ -1,0 +1,224 @@
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f7f6;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #2d3748;
+}
+
+.admin-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #0056b3;
+  background-color: #f4f7f6;
+}
+
+/* Sidebar com mescla de Azul e Detalhes em Verde */
+.admin-sidebar {
+  width: 260px;
+  background-color: #0f172a; /* Azul escuro profundo */
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.5rem;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.admin-brand h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.admin-brand h2 span {
+  color: #10b981; /* Verde destacado da logo */
+}
+
+.admin-brand small {
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 2.5rem;
+}
+
+.admin-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background-color: #10b981; /* Fundo Verde para item ativo */
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Área de Conteúdo */
+.admin-main-content {
+  flex: 1;
+  padding: 2.5rem 3.5rem;
+  overflow-y: auto;
+}
+
+.admin-main-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  color: #0f172a;
+}
+
+.admin-main-header p {
+  color: #64748b;
+  margin: 0 0 2.5rem 0;
+}
+
+/* Grid Layout */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.admin-card h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #0f172a;
+  font-size: 1.15rem;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 0.75rem;
+}
+
+/* Formulário com Botão Azul Profissional */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #475569;
+}
+
+.admin-form input {
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.admin-form input:focus {
+  border-color: #0056b3; /* Foco em azul */
+}
+
+.btn-admin-submit {
+  background-color: #0056b3; /* Azul escuro corporativo */
+  color: #ffffff;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-admin-submit:hover {
+  background-color: #004494;
+}
+
+/* Tabela de Dados e Elementos Verdes */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.admin-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-data-table th {
+  padding: 0.75rem 1rem;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.admin-data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.95rem;
+}
+
+.badge-code {
+  font-family: 'JetBrains Mono', monospace, sans-serif;
+  font-weight: 600;
+  color: #0056b3; /* Código destacado em azul */
+  background-color: #eff6ff;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+
+.badge-status-active {
+  background-color: #dcfce7; /* Verde suave para sucesso/ativo */
+  color: #15803d;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.btn-admin-revoke {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #fee2e2;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.btn-admin-revoke:hover {
+  background-color: #fef2f2;
+  border-color: #dc2626;
+}
