@@ -13,7 +13,6 @@ function Home() {
                     <nav aria-label="Principal">
                         <ul className="flex gap-4">
                             <li><Link to="/login" className="bg-emerald-500 text-white font-semibold px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-smart-teal transition duration-300 ease-in-out hover:bg-emerald-600">Entrar</Link></li>
-                            <li><Link to="/cadastro" className="border border-smart-mint text-smart-mint px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-smart-teal transition duration-300 ease-in-out hover:bg-emerald-700 hover:text-white">Registro</Link></li>
                         </ul>
                     </nav>
                 </div>
@@ -23,16 +22,12 @@ function Home() {
                 <div className="max-w-5xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     <div>
                         <h2 id="home-title" className="text-4xl font-extrabold mb-4 text-white">Diagnóstico dermatológico com auxílio de IA — acessível e seguro</h2>
-                        <p className="text-gray-300 mb-6">O SmartDerm aproxima pacientes, médicos e cientistas com ferramentas intuitivas e pensadas para acessibilidade: contraste alto, navegação por teclado e compatibilidade com leitores de tela.</p>
-                        <div className="flex gap-4">
-                            <Link to="/login" className="bg-emerald-500 text-white font-semibold px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-smart-teal transition duration-300 ease-in-out hover:bg-emerald-600">Entrar no sistema</Link>
-                           {/*} <Link to="/cadastro" className="bg-sky-700 border border-smart-mint text-smart-mint px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-smart-teal hover:bg-smart-mint hover:text-black">Cadastre-se</Link> */}
-                        </div>
+                        <p className="text-gray-300 mb-6">O SmartDerm utiliza inteligência artificial para analisar imagens dermatológicas e identificar padrões visuais relevantes, oferecendo informações claras e acessíveis que auxiliam pacientes e profissionais de saúde na compreensão dos achados observados.</p>
 
                         <ul className="mt-8 space-y-3 text-gray-300">
-                            <li><strong>Análise inteligente de imagens:</strong> utilize inteligência artificial para identificar padrões visuais em lesões dermatológicas, fornecendo informações detalhadas que auxiliam na avaliação clínica e na tomada de decisão.</li>
-                            <li><strong>Análises além do sim/não:</strong> o SmartDerm examina imagens e aponta sinais visuais relevantes, entregando um resultado claro e descritivo em vez de apenas "positivo/negativo".</li>
-                            <li><strong>Laudos que fazem sentido:</strong> cada relatório traz explicações visuais e textuais que ajudam você e o profissional de saúde a entender o que foi observado.</li>
+                            <li><strong>Análise avançada de imagens:</strong> algoritmos de inteligência artificial examinam características visuais de lesões dermatológicas, destacando aspectos que podem contribuir para uma avaliação mais detalhada.</li>
+                            <li><strong>Resultados explicativos e transparentes:</strong> em vez de apresentar apenas respostas simples, o SmartDerm descreve os sinais visuais identificados e fornece informações que auxiliam na interpretação dos resultados.</li>
+                            <li><strong>Relatórios detalhados e compreensíveis:</strong> cada análise é acompanhada de explicações visuais e textuais, facilitando a comunicação entre pacientes, profissionais de saúde e pesquisadores.</li>
                         </ul>
                     </div>
 
