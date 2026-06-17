@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import imageRoutes from './routes/imageRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import doctorRoutes from './routes/doctorRoutes.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 app.use('/api', imageRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', chatRoutes);
+app.use('/api', doctorRoutes);
 
 
 app.listen(PORT, '0.0.0.0', () => {

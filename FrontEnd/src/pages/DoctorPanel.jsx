@@ -1,32 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
 import ReactMarkdown from 'react-markdown';
 import '../components/ChatMarkdown.css';
 
 function DoctorPanel() {
     const [filaConsultas, setFilaConsultas] = useState([]);
     const [consultaSelecionada, setConsultaSelecionada] = useState(null);
-    
-    // 1. ALTERAÇÃO: 'imagem' mudou para 'imagens' (um array vazio por padrão)
     const [dadosTriagem, setDadosTriagem] = useState({ imagens: [], analiseIA: '' });
-    
     const [laudoFinal, setLaudoFinal] = useState('');
     const [carregando, setCarregando] = useState(false);
+
+    // Helper para as requisições autenticadas
+    const getAuthHeaders = () => ({
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+    });
 
     useEffect(() => {
         buscarFilaDePacientes();
     }, []);
 
     const buscarFilaDePacientes = async () => {
-        console.log("📡 A procurar fila de pacientes...");
-        const { data, error } = await supabase
-            .from('consultas')
-            .select('*');
-
-        if (data) {
-            setFilaConsultas(data.reverse());
-        } else {
-            console.error("Erro ao buscar pacientes:", error);
+        try {
+            const resposta = await fetch('http://localhost:3000/api/medico/consultas', {
+                headers: getAuthHeaders()
+            });
+            if (resposta.ok) {
+                const data = await resposta.json();
+                setFilaConsultas(data);
+            } else {
+                console.error("Erro ao buscar pacientes");
+            }
+        } catch (error) {
+            console.error("Falha na comunicação com a API:", error);
         }
     };
 
@@ -34,33 +39,41 @@ function DoctorPanel() {
         setCarregando(true);
         setConsultaSelecionada(consulta);
         
-        // MODIFICAÇÃO: Se já existir um laudo guardado, carrega-o para a caixa de texto. Se não, deixa em branco.
-        setLaudoFinal(consulta.laudo_medico || ''); 
+        // No Prisma, o campo chama-se laudoMedico (camelCase)
+        setLaudoFinal(consulta.laudoMedico || ''); 
 
-        const { data, error } = await supabase
-            .from('mensagens')
-            .select('*')
-            .eq('consulta_id', consulta.id)
-            .order('id', { ascending: true });
-
-        if (data) {
-            let imagensEncontradas = [];
-            let analiseEncontrada = 'Nenhuma análise de IA encontrada para esta triagem.';
-
-            data.forEach(msg => {
-                if (msg.imagem_url) {
-                    imagensEncontradas.push(msg.imagem_url);
-                }
-                if (msg.role === 'assistant' && msg.texto) {
-                    analiseEncontrada = msg.texto;
-                }
+        try {
+            const resposta = await fetch(`http://localhost:3000/api/medico/consultas/${consulta.id}`, {
+                headers: getAuthHeaders()
             });
 
-            setDadosTriagem({
-                imagens: imagensEncontradas,
-                analiseIA: analiseEncontrada
-            });
+            if (resposta.ok) {
+                const data = await resposta.json();
+                
+                let imagensEncontradas = [];
+                let analiseEncontrada = 'Nenhuma análise de IA encontrada para esta triagem.';
+
+                // O nosso back-end já devolve as mensagens organizadas junto com a consulta!
+                if (data.mensagens) {
+                    data.mensagens.forEach(msg => {
+                        if (msg.imagem_url) {
+                            imagensEncontradas.push(msg.imagem_url);
+                        }
+                        if (msg.role === 'assistant' && msg.texto) {
+                            analiseEncontrada = msg.texto;
+                        }
+                    });
+                }
+
+                setDadosTriagem({
+                    imagens: imagensEncontradas,
+                    analiseIA: analiseEncontrada
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao carregar detalhes da consulta:", error);
         }
+        
         setCarregando(false);
     };
 
@@ -72,39 +85,33 @@ function DoctorPanel() {
 
         setCarregando(true); 
 
-        const { error } = await supabase
-            .from('consultas')
-            .update({ 
-                laudo_medico: laudoFinal,
-                status: 'finalizada' 
-            })
-            .eq('id', consultaSelecionada.id); 
+        try {
+            const resposta = await fetch(`http://localhost:3000/api/medico/consultas/${consultaSelecionada.id}/laudo`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ laudoMedico: laudoFinal })
+            });
 
-        if (error) {
+            if (resposta.ok) {
+                // Atualizamos o estado localmente
+                setConsultaSelecionada(prev => ({...prev, status: 'finalizada', laudoMedico: laudoFinal}));
+                alert(`✅ Laudo guardado/atualizado com sucesso!`);
+                buscarFilaDePacientes(); // Atualiza a barra lateral
+            } else {
+                alert("Ocorreu um erro ao guardar o laudo no servidor.");
+            }
+        } catch (error) {
             console.error("Erro ao guardar o laudo:", error);
-            alert("Ocorreu um erro de comunicação com a base de dados.");
-            setCarregando(false);
-            return;
+            alert("Erro de comunicação com a base de dados.");
         }
 
-        // MODIFICAÇÃO: Atualizamos o estado localmente sem fechar o ecrã
-        setConsultaSelecionada(prev => ({...prev, status: 'finalizada', laudo_medico: laudoFinal}));
-        alert(`✅ Laudo guardado/atualizado com sucesso!`);
-        
-        buscarFilaDePacientes();
         setCarregando(false);
     };
 
-    // ==========================================
-    // NOVA FUNÇÃO DE LOGOUT SEGURO
-    // ==========================================
-    const fazerLogout = async () => {
-        try {
-            await supabase.auth.signOut(); // Destrói a sessão no Supabase e no navegador
-            window.location.replace('/'); // Redireciona e impede o uso do botão "Voltar" do navegador
-        } catch (error) {
-            console.error("Erro ao fazer logout:", error);
-        }
+    const fazerLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        window.location.replace('/'); 
     };
 
     return (
@@ -135,8 +142,8 @@ function DoctorPanel() {
                             >
                                 <div className="font-semibold">{consulta.nome_paciente}</div>
                                 <div className="text-xs text-gray-400 mt-1 flex justify-between items-center">
-                                    <span>ID: {consulta.id}</span>
-                                    {/* Etiqueta de Estado */}
+                                    {/* Mostramos parte do ID para não quebrar o layout */}
+                                    <span>ID: {consulta.id.substring(0,8)}...</span> 
                                     {consulta.status === 'finalizada' ? (
                                         <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold">
                                             FINALIZADA
@@ -153,7 +160,6 @@ function DoctorPanel() {
                 </div>
                 
                 <div className="p-4 border-t border-white/10">
-                    {/* BOTÃO DE LOGOUT ATUALIZADO */}
                     <button 
                         onClick={fazerLogout}
                         className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition"
@@ -184,7 +190,6 @@ function DoctorPanel() {
                             </h2>
                         </div>
 
-                        {/* Colunas: Imagem e Análise */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             {/* Coluna da Galeria de Imagens */}
