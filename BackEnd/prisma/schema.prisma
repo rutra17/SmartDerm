@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. TABELA DE PACIENTES
+// ==========================================
+model Paciente {
+  id        String     @id @default(uuid())
+  username  String     @unique // O novo meio de autenticação (Login)
+  senha     String     // Será guardada com hash (Bcrypt)
+  nome      String
+  email     String     @unique // Continua único, mas não é usado para login
+  cpf       String?    @unique // Exemplo de campo específico
+  criadoEm  DateTime   @default(now())
+  
+  consultas Consulta[]
+}
+
+// ==========================================
+// 2. TABELA DE MÉDICOS
+// ==========================================
+model Medico {
+  id        String     @id @default(uuid())
+  username  String     @unique // O novo meio de autenticação (Login)
+  senha     String
+  nome      String
+  email     String     @unique
+  crm       String     @unique // Campo obrigatório e específico para médicos
+  criadoEm  DateTime   @default(now())
+  
+  laudos    Consulta[] // Consultas que este médico analisou
+}
+
+// ==========================================
+// 3. TABELA DE CIENTISTAS
+// ==========================================
+model Cientista {
+  id          String     @id @default(uuid())
+  username    String     @unique // O novo meio de autenticação (Login)
+  senha       String
+  nome        String
+  email       String     @unique
+  instituicao String?    // Campo específico para cientistas/pesquisadores
+  criadoEm    DateTime   @default(now())
+}
+
+// ==========================================
+// 4. TABELA DE CONSULTAS (Triagem)
+// ==========================================
+model Consulta {
+  id              String     @id @default(uuid())
+  pacienteId      String
+  medicoId        String?    // Pode ser nulo até um médico assumir a consulta
+  status          String     @default("pendente") // "pendente", "em_analise", "finalizada"
+  laudoMedico     String?    @db.Text
+  analiseGemini   String?    @db.Text
+  criadoEm        DateTime   @default(now())
+  
+  paciente        Paciente   @relation(fields: [pacienteId], references: [id])
+  medico          Medico?    @relation(fields: [medicoId], references: [id])
+  mensagens       Mensagem[]
+}
+
+// ==========================================
+// 5. TABELA DE MENSAGENS E IMAGENS (Chat)
+// ==========================================
+model Mensagem {
+  id          String   @id @default(uuid())
+  consultaId  String
+  texto       String?  @db.Text
+  imagemUrl   String?  // Nome da imagem guardada no MinIO
+  remetente   String   // "paciente", "medico" ou "ia"
+  criadoEm    DateTime @default(now())
+
+  consulta    Consulta @relation(fields: [consultaId], references: [id])
+}

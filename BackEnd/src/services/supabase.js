@@ -11,6 +11,7 @@ const supabaseKey = process.env.SUPABASE_KEY;
 if (!supabaseUrl || !supabaseKey) {
     console.error("⚠️ ERRO: Faltam as chaves SUPABASE_URL ou SUPABASE_KEY no ficheiro .env do Back-End!");
 }
+// O Supabase foi desativado! 
+// Agora usamos o PostgreSQL (via Prisma) e o MinIO.
 
-// Cria e exporta a conexão para o imageController usar
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = null;
