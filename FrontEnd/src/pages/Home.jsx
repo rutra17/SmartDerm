@@ -1,8 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/img/Smartderm.jfif';
 
 function Home() {
+    const [step, setStep] = useState(0);
+
+    useEffect(() => {
+        const timeouts = [];
+
+        const runAnimation = () => {
+            setStep(0);
+
+            timeouts.push(setTimeout(() => setStep(1), 800));
+            timeouts.push(setTimeout(() => setStep(2), 1600));
+            timeouts.push(setTimeout(() => setStep(3), 2400));
+            timeouts.push(setTimeout(() => setStep(4), 3200));
+            timeouts.push(setTimeout(() => setStep(5), 4200));
+            timeouts.push(setTimeout(() => setStep(6), 5500));
+        };
+
+        runAnimation();
+
+        const interval = setInterval(runAnimation, 10000);
+
+        return () => {
+            clearInterval(interval);
+            timeouts.forEach(clearTimeout);
+        };
+    }, []);
     return (
         <main
             className="min-h-screen bg-smart-blue text-white flex flex-col"
@@ -115,74 +140,151 @@ function Home() {
                         </div>
                     </div>
 
-                    {/* Card demonstrativo */}
+                    {/* Card demonstrativo animado */}
                     <div className="flex justify-center">
-                        <div className="w-full max-w-md bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl">
+                        <div className="relative w-full max-w-md bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden">
+
+                            <div className="absolute inset-0 bg-gradient-to-br from-smart-mint/5 via-transparent to-transparent pointer-events-none" />
 
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-bold text-xl">
                                     Exemplo de análise
                                 </h3>
 
-                                <span className="bg-smart-mint/20 text-smart-mint px-3 py-1 rounded-full text-xs font-semibold">
-                                    IA
+                                <span
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-500 ${step >= 6
+                                        ? 'bg-green-500/20 text-green-300'
+                                        : 'bg-smart-mint/20 text-smart-mint'
+                                        }`}
+                                >
+                                    {step >= 6 ? 'MÉDICO' : 'IA'}
                                 </span>
                             </div>
 
-                            <div className="space-y-4">
+                            {/* Imagem simulada */}
+                            <div className="relative h-32 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 mb-6 overflow-hidden border border-white/10">
 
-                                <div className="flex items-center justify-between">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-16 h-16 rounded-full bg-amber-700/60 border border-amber-500" />
+                                </div>
+
+                                {step < 5 && (
+                                    <div
+                                        className="absolute top-0 bottom-0 w-12 bg-gradient-to-r from-transparent via-smart-mint/30 to-transparent"
+                                        style={{
+                                            left: `${step * 20}%`,
+                                            transition: 'all 1s ease'
+                                        }}
+                                    />
+                                )}
+                            </div>
+
+                            <div className="space-y-3 min-h-[190px]">
+
+                                <div
+                                    className={`flex items-center justify-between transition-all duration-500 ${step >= 1
+                                        ? 'opacity-100 translate-y-0'
+                                        : 'opacity-0 translate-y-3'
+                                        }`}
+                                >
                                     <span>Assimetria</span>
-                                    <span className="text-smart-mint">
-                                        Detectada
-                                    </span>
+                                    <span className="text-smart-mint">Detectada</span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
+                                <div
+                                    className={`flex items-center justify-between transition-all duration-500 ${step >= 2
+                                        ? 'opacity-100 translate-y-0'
+                                        : 'opacity-0 translate-y-3'
+                                        }`}
+                                >
                                     <span>Bordas</span>
-                                    <span className="text-smart-mint">
-                                        Irregulares
-                                    </span>
+                                    <span className="text-smart-mint">Irregulares</span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
+                                <div
+                                    className={`flex items-center justify-between transition-all duration-500 ${step >= 3
+                                        ? 'opacity-100 translate-y-0'
+                                        : 'opacity-0 translate-y-3'
+                                        }`}
+                                >
                                     <span>Coloração</span>
-                                    <span className="text-smart-mint">
-                                        Variada
-                                    </span>
+                                    <span className="text-smart-mint">Variada</span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
+                                <div
+                                    className={`flex items-center justify-between transition-all duration-500 ${step >= 4
+                                        ? 'opacity-100 translate-y-0'
+                                        : 'opacity-0 translate-y-3'
+                                        }`}
+                                >
                                     <span>Diâmetro</span>
                                     <span className="text-smart-mint">
                                         &gt; 6 mm
                                     </span>
                                 </div>
+
+                                {step >= 5 && (
+                                    <div className="rounded-xl border border-smart-mint/20 bg-smart-mint/10 p-3 animate-pulse">
+                                        <p className="text-sm text-smart-mint">
+                                            ✓ Pré-relatório gerado pela IA
+                                        </p>
+                                    </div>
+                                )}
+
+                                {step >= 6 && (
+                                    <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
+                                        <p className="font-semibold text-green-300 mb-2">
+                                            Revisão médica concluída
+                                        </p>
+
+                                        <p className="text-sm text-gray-300">
+                                            Os achados indicam necessidade de avaliação
+                                            dermatológica especializada.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-8">
                                 <div className="flex justify-between text-sm mb-2">
-                                    <span>Nível de atenção</span>
+                                    <span>Status da análise</span>
+
                                     <span className="text-smart-mint font-semibold">
-                                        Moderado
+                                        {step === 0 && 'Preparando'}
+                                        {step === 1 && '20%'}
+                                        {step === 2 && '40%'}
+                                        {step === 3 && '60%'}
+                                        {step === 4 && '80%'}
+                                        {step === 5 && '95%'}
+                                        {step === 6 && 'Concluído'}
                                     </span>
                                 </div>
 
                                 <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                                    <div className="w-2/3 h-full bg-gradient-to-r from-smart-teal to-smart-mint rounded-full" />
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-smart-teal to-smart-mint transition-all duration-700"
+                                        style={{
+                                            width:
+                                                step === 0 ? '5%' :
+                                                    step === 1 ? '20%' :
+                                                        step === 2 ? '40%' :
+                                                            step === 3 ? '60%' :
+                                                                step === 4 ? '80%' :
+                                                                    step === 5 ? '95%' :
+                                                                        '100%'
+                                        }}
+                                    />
                                 </div>
                             </div>
 
                             <div className="mt-6 bg-smart-blue/50 border border-white/10 rounded-xl p-4">
                                 <p className="text-sm text-gray-300">
-                                    Resultado preliminar gerado pela IA e sujeito
-                                    à validação de um profissional médico.
+                                    Demonstração ilustrativa do fluxo entre inteligência artificial
+                                    e validação médica especializada.
                                 </p>
                             </div>
-
                         </div>
                     </div>
-
                 </div>
             </section>
 
