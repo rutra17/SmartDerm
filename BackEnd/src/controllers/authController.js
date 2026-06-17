@@ -1,86 +1,31 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
-// Em produção, isto deve vir do seu ficheiro .env no Coolify
 const JWT_SECRET = process.env.JWT_SECRET || 'ARTORIA';
 
-export const login = async (req, res) => {
-    try {
-        const { username, senha } = req.body;
-
-        if (!username || !senha) {
-            return res.status(400).json({ erro: 'Username e senha são obrigatórios.' });
-        }
-
-        // 1. Procurar o utilizador (Vamos checar as 3 tabelas)
-        let usuario = await prisma.paciente.findUnique({ where: { username } });
-        let tipoUsuario = 'paciente';
-
-        if (!usuario) {
-            usuario = await prisma.medico.findUnique({ where: { username } });
-            tipoUsuario = 'medico';
-        }
-
-        if (!usuario) {
-            usuario = await prisma.cientista.findUnique({ where: { username } });
-            tipoUsuario = 'cientista';
-        }
-
-        // 2. Se o username não existir em nenhuma tabela
-        if (!usuario) {
-            return res.status(401).json({ erro: 'Usuário não encontrado.' });
-        }
-
-        // 3. Verificar se a senha está correta (Bcrypt compara o texto com o Hash do banco)
-        const senhaValida = await bcrypt.compare(senha, usuario.senha);
-        if (!senhaValida) {
-            return res.status(401).json({ erro: 'Senha incorreta.' });
-        }
-
-        // 4. Gerar o JWT (O Crachá Digital)
-        const token = jwt.sign(
-            { 
-                id: usuario.id, 
-                username: usuario.username, 
-                tipo: tipoUsuario // Guardamos o tipo para saber o que ele pode acessar
-            },
-            JWT_SECRET,
-            { expiresIn: '24h' } // O token expira em 24 horas por segurança
-        );
-
-        // 5. Devolver o token e os dados básicos para o Front-End
-        res.json({
-            mensagem: 'Login realizado com sucesso!',
-            token,
-            usuario: {
-                id: usuario.id,
-                nome: usuario.nome,
-                tipo: tipoUsuario
-            }
-        });
-
-    } catch (error) {
-        console.error("Erro no login:", error);
-        res.status(500).json({ erro: 'Erro interno no servidor.' });
-    }
-};
 export const registrar = async (req, res) => {
     try {
-        const { username, senha, nome, email, tipo, dadoEspecifico } = req.body;
+        // AQUI ESTAVA O ERRO! Agora extraímos TODOS os campos que o Front-End envia.
+        const { username, senha, nome, email, tipo, dadoEspecifico, genero, cep, endereco, referencia } = req.body;
 
-        if (!username || !senha || !nome || !email || !tipo) {
-            return res.status(400).json({ erro: 'Preencha todos os campos obrigatórios.' });
+        // Verifica se o usuário já existe
+        const usuarioExistente = await prisma.paciente.findUnique({ where: { username } }) ||
+                                 await prisma.medico.findUnique({ where: { username } }) ||
+                                 await prisma.cientista.findUnique({ where: { username } });
+
+        if (usuarioExistente) {
+            return res.status(400).json({ erro: "Este utilizador já está registado." });
         }
 
-        // 1. Criptografar a senha antes de guardar!
+        // Criptografa a senha (Bcrypt)
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);
 
         let novoUsuario;
 
-        // 2. Guardar na tabela correta dependendo do tipo
+        // Guarda o utilizador na tabela correta com TODOS os dados
         if (tipo === 'paciente') {
             novoUsuario = await prisma.paciente.create({
                 data: {
@@ -89,10 +34,10 @@ export const registrar = async (req, res) => {
                     nome,
                     email,
                     cpf: dadoEspecifico,
-                    genero,          
-                    cep,              
-                    endereco,         
-                    referencia        
+                    genero,
+                    cep,
+                    endereco,
+                    referencia
                 }
             });
         } else if (tipo === 'medico') {
@@ -103,32 +48,85 @@ export const registrar = async (req, res) => {
                     nome,
                     email,
                     crm: dadoEspecifico,
-                    genero,           
-                    cep,              
-                    endereco,         
-                    referencia        
+                    genero,
+                    cep,
+                    endereco,
+                    referencia
+                }
+            });
+        } else if (tipo === 'cientista') {
+            novoUsuario = await prisma.cientista.create({
+                data: {
+                    username,
+                    senha: senhaHash,
+                    nome,
+                    email,
+                    instituicao: dadoEspecifico,
+                    genero,
+                    cep,
+                    endereco,
+                    referencia
                 }
             });
         } else {
-            return res.status(400).json({ erro: 'Tipo de utilizador inválido. Use paciente ou medico.' });
+            return res.status(400).json({ erro: "Tipo de conta inválido." });
         }
 
-        // 3. Devolver sucesso sem mostrar a senha!
-        res.status(201).json({
-            mensagem: `${tipo} registado com sucesso!`,
-            usuario: {
-                id: novoUsuario.id,
-                username: novoUsuario.username,
-                nome: novoUsuario.nome
-            }
+        // Resposta de Sucesso
+        res.status(201).json({ 
+            mensagem: `${tipo} registado com sucesso!`, 
+            usuario: { id: novoUsuario.id, username, nome, tipo } 
         });
 
     } catch (error) {
         console.error("Erro no registo:", error);
-        // O código P2002 do Prisma significa que um campo @unique (como username ou email) já existe
-        if (error.code === 'P2002') {
-            return res.status(400).json({ erro: 'Este username ou email já está em uso.' });
+        res.status(500).json({ erro: "Erro interno no servidor ao registar." });
+    }
+};
+
+export const login = async (req, res) => {
+    try {
+        const { username, senha } = req.body;
+
+        // Procura em qual tabela o utilizador está
+        let usuario = await prisma.paciente.findUnique({ where: { username } });
+        let tipo = 'paciente';
+
+        if (!usuario) {
+            usuario = await prisma.medico.findUnique({ where: { username } });
+            tipo = 'medico';
         }
-        res.status(500).json({ erro: 'Erro interno no servidor ao registar.' });
+
+        if (!usuario) {
+            usuario = await prisma.cientista.findUnique({ where: { username } });
+            tipo = 'cientista';
+        }
+
+        if (!usuario) {
+            return res.status(404).json({ erro: "Utilizador não encontrado." });
+        }
+
+        // Verifica se a senha bate com a criptografia
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        if (!senhaValida) {
+            return res.status(401).json({ erro: "Senha incorreta." });
+        }
+
+        // Gera o "Crachá" (Token JWT)
+        const token = jwt.sign(
+            { id: usuario.id, username: usuario.username, tipo },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.status(200).json({
+            mensagem: "Login realizado com sucesso!",
+            token,
+            usuario: { id: usuario.id, nome: usuario.nome, tipo }
+        });
+
+    } catch (error) {
+        console.error("Erro no login:", error);
+        res.status(500).json({ erro: "Erro interno no servidor ao fazer login." });
     }
 };

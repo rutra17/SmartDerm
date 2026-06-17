@@ -8,7 +8,7 @@ function Register() {
     const [tipoConta, setTipoConta] = useState('paciente');
     const [identificador, setIdentificador] = useState('');
     const [nomeCompleto, setNomeCompleto] = useState('');
-    const [email, setEmail] = useState(''); // NOVO ESTADO: E-mail real
+    const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [codigoAutorizacao, setCodigoAutorizacao] = useState('');
     const [genero, setGenero] = useState('');
@@ -131,7 +131,7 @@ function Register() {
         };
 
         try {
-            const resposta = await fetch('http://localhost:3000/api/auth/registar', {
+            const resposta = await fetch('http://localhost:3000/api/auth/registrar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -313,7 +313,7 @@ function Register() {
                         type="submit" disabled={loading}
                         className="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-bold text-lg shadow-lg transition disabled:opacity-50"
                     >
-                        {loading ? 'A registar...' : 'Criar Conta'}
+                        {loading ? 'A registrar...' : 'Criar Conta'}
                     </button>
                 </form>
 

@@ -1,26 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
+import React, { useEffect } from 'react';
 
 function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedPrompt }) {
-    const [listaPrompts, setListaPrompts] = useState([]);
+    
+    // Lista de Prompts estática (Substitui a antiga chamada ao Supabase)
+    const listaPrompts = [
+        { titulo: 'Padrão Atual', chave_identificadora: 'padrao' },
+        { titulo: 'Triagem Severa (Urgências)', chave_identificadora: 'urgencia' },
+        { titulo: 'Análise Altamente Detalhada', chave_identificadora: 'detalhado' }
+    ];
 
-    // Carrega os prompts reais do banco de dados ao iniciar o chat
+    // Garante que o prompt 'padrao' é selecionado caso não haja nenhum definido
     useEffect(() => {
-        const obterPromptsDoBanco = async () => {
-            const { data } = await supabase
-                .from('engenharia_prompts')
-                .select('titulo, chave_identificadora');
-            
-            if (data) {
-                setListaPrompts(data);
-                // Define o prompt padrão como selecionado inicialmente
-                if (!selectedPrompt) {
-                    setSelectedPrompt('padrao');
-                }
-            }
-        };
-        obterPromptsDoBanco();
-    }, []);
+        if (!selectedPrompt) {
+            setSelectedPrompt('padrao');
+        }
+    }, [selectedPrompt, setSelectedPrompt]);
 
     return (
         <div className="w-full bg-[#202123] border-b border-white/10 p-4 flex flex-wrap justify-between items-center gap-4 shadow-md">
@@ -55,15 +49,11 @@ function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedProm
                         onChange={(e) => setSelectedPrompt(e.target.value)}
                         className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium max-w-[200px]"
                     >
-                        {listaPrompts.length === 0 ? (
-                            <option value="padrao">Padrão Atual</option>
-                        ) : (
-                            listaPrompts.map(p => (
-                                <option key={p.chave_identificadora} value={p.chave_identificadora}>
-                                    {p.titulo}
-                                </option>
-                            ))
-                        )}
+                        {listaPrompts.map(p => (
+                            <option key={p.chave_identificadora} value={p.chave_identificadora}>
+                                {p.titulo}
+                            </option>
+                        ))}
                     </select>
                 </div>
 

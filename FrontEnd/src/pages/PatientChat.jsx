@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Importações dos Componentes
 import Sidebar from '../components/Sidebar';
@@ -7,11 +8,9 @@ import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
 import SkeletonLoader from '../components/SkeletonLoader';
 
-// Importações dos Serviços
-import { supabase } from '../services/supabase';
-import { uploadImageToBackend } from '../services/api';
-
 function PatientChat() {
+    const navigate = useNavigate();
+
     // ==========================================
     // 1. ESTADOS DA APLICAÇÃO
     // ==========================================
@@ -42,19 +41,17 @@ function PatientChat() {
     // 2. EFEITOS COLATERAIS (USE EFFECT)
     // ==========================================
     
-    // A. Capturar o nome do paciente logado
+    // A. Capturar o nome do paciente logado através do LocalStorage
     useEffect(() => {
-        const carregarPerfilDoPaciente = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && user.user_metadata) {
-                const nomeReal = user.user_metadata.nome_completo || user.user_metadata.nome;
-                if (nomeReal) {
-                    const primeiroNome = nomeReal.split(' ')[0]; 
-                    setNomePaciente(primeiroNome);
-                }
-            }
-        };
-        carregarPerfilDoPaciente();
+        const usuarioString = localStorage.getItem('usuario');
+        if (usuarioString) {
+            const usuario = JSON.parse(usuarioString);
+            const primeiroNome = usuario.nome.split(' ')[0]; 
+            setNomePaciente(primeiroNome);
+        }
+        
+        // Carrega o histórico de consultas assim que a página abre
+        carregarHistorico();
     }, []);
 
     // B. Rolagem automática para o final do chat
@@ -64,23 +61,26 @@ function PatientChat() {
         }
     }, [messages, loading]);
 
-    // C. Carregar histórico ao abrir
-    useEffect(() => {
-        carregarHistorico();
-    }, []);
+    // Helper: Buscar o Token para autorizar os pedidos
+    const getAuthHeaders = () => ({
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    });
 
     // ==========================================
-    // 3. FUNÇÕES DE BANCO DE DADOS E API
+    // 3. FUNÇÕES DE BANCO DE DADOS E API (VIA BACK-END)
     // ==========================================
 
     const carregarHistorico = async () => {
-        const { data, error } = await supabase.from('consultas').select('*');
-
-        if (error) {
+        try {
+            const resposta = await fetch('http://localhost:3000/api/consultas', {
+                headers: getAuthHeaders()
+            });
+            if (resposta.ok) {
+                const data = await resposta.json();
+                setHistory(data.reverse()); // Inverte para mostrar as mais recentes primeiro
+            }
+        } catch (error) {
             console.error("❌ Erro ao buscar histórico:", error);
-        } else if (data) {
-            const historicoInvertido = data.reverse(); 
-            setHistory(historicoInvertido);
         }
     };
 
@@ -89,18 +89,26 @@ function PatientChat() {
         if (!patientName.trim()) return;
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('consultas')
-            .insert([{ nome_paciente: patientName }])
-            .select()
-            .single();
+        try {
+            const resposta = await fetch('http://localhost:3000/api/consultas', {
+                method: 'POST',
+                headers: {
+                    ...getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nome_paciente: patientName })
+            });
 
-        if (!error) {
-            setConsultaId(data.id);
-            setMessages([]); // Inicia o chat limpo
-            setPatientName('');
-            setIsModalOpen(false); 
-            carregarHistorico(); 
+            if (resposta.ok) {
+                const novaConsulta = await resposta.json();
+                setConsultaId(novaConsulta.id);
+                setMessages([]); 
+                setPatientName('');
+                setIsModalOpen(false); 
+                carregarHistorico(); 
+            }
+        } catch (error) {
+            console.error("❌ Erro ao iniciar consulta:", error);
         }
         setLoading(false);
     };
@@ -110,22 +118,24 @@ function PatientChat() {
         setMessages([]); 
         setLoading(true); 
 
-        const { data, error } = await supabase
-            .from('mensagens')
-            .select('*')
-            .eq('consulta_id', id);
+        try {
+            const resposta = await fetch(`http://localhost:3000/api/consultas/${id}/mensagens`, {
+                headers: getAuthHeaders()
+            });
 
-        if (error) {
-            console.error("❌ Erro ao buscar as mensagens do chat:", error);
-        } else if (data) {
-            const mensagensOrdenadas = data.sort((a, b) => a.id - b.id);
-            const mensagensFormatadas = mensagensOrdenadas.map(msg => ({
-                id: msg.id,
-                role: msg.role,
-                text: msg.texto,
-                image: msg.imagem_url
-            }));
-            setMessages(mensagensFormatadas);
+            if (resposta.ok) {
+                const data = await resposta.json();
+                // Formata as mensagens vindas do Prisma para o formato que o seu componente espera
+                const mensagensFormatadas = data.map(msg => ({
+                    id: msg.id,
+                    role: msg.role,
+                    text: msg.texto,
+                    image: msg.imagem_url
+                }));
+                setMessages(mensagensFormatadas);
+            }
+        } catch (error) {
+            console.error("❌ Erro ao buscar mensagens:", error);
         }
         setLoading(false);
     };
@@ -157,75 +167,60 @@ function PatientChat() {
         }
         
         const textToSend = input.trim() ? input : "Imagem enviada para triagem.";
-        const newMsg = { id: Date.now(), role: 'user', text: textToSend, image: imagePreview };
         
+        // Exibe imediatamente a mensagem do usuário na tela (Feedback visual rápido)
+        const newMsg = { id: Date.now(), role: 'user', text: textToSend, image: imagePreview };
         setMessages(prev => [...prev, newMsg]);
+        
         setInput('');
         setLoading(true);
 
-        let urlFinalDaImagem = null;
-
+        // Prepara um "Pacote" (FormData) que aceita tanto texto quanto arquivos pesados (imagens)
+        const formData = new FormData();
+        formData.append('consultaId', consultaId);
+        formData.append('texto', textToSend);
+        formData.append('ia_utilizada', selectedAI);
+        formData.append('prompt_utilizado', selectedPrompt);
+        
         if (imageFile) {
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+            formData.append('imagem', imageFile);
+        }
 
-            const { error: uploadError } = await supabase.storage
-                .from('imagens-medicas')
-                .upload(fileName, imageFile);
+        try {
+            // Envia tudo de uma vez para o nosso Back-End
+            const resposta = await fetch('http://localhost:3000/api/chat/enviar', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    // O navegador coloca automaticamente o header "multipart/form-data" quando enviamos FormData
+                },
+                body: formData
+            });
 
-            if (!uploadError) {
-                const { data: publicUrlData } = supabase.storage
-                    .from('imagens-medicas')
-                    .getPublicUrl(fileName);
+            if (resposta.ok) {
+                const dadosRetorno = await resposta.json();
                 
-                urlFinalDaImagem = publicUrlData.publicUrl;
-
-                await supabase.from('mensagens').insert([{
-                    consulta_id: consultaId,
-                    role: 'user',
-                    texto: textToSend,
-                    imagem_url: urlFinalDaImagem 
-                }]);
-
-                try {
-                    let textoFinalRespostaIA = "";
-
-                    if (selectedAI === 'simulacao') {
-                        await new Promise(resolve => setTimeout(resolve, 1500)); 
-                        textoFinalRespostaIA = `[Modo Simulação] Teste executado com sucesso!\nIA selecionada: ${selectedAI}\nID do Prompt aplicado: ${selectedPrompt}\nSua imagem foi salva de forma isolada na nuvem.`;
-                    } else {
-                        const respostaBackend = await uploadImageToBackend(imageFile, textToSend, selectedAI, selectedPrompt);
-                        textoFinalRespostaIA = respostaBackend.resultadoIA; 
-                    }
-
-                    const aiMsg = { id: Date.now(), role: 'assistant', text: textoFinalRespostaIA, image: null };
-                    setMessages(prev => [...prev, aiMsg]);
-
-                    await supabase.from('mensagens').insert([{
-                        consulta_id: consultaId,
-                        role: 'assistant',
-                        texto: textoFinalRespostaIA,
-                        ia_utilizada: selectedAI,
-                        prompt_utilizado: selectedPrompt
-                    }]);
-
-                } catch (err) {
-                    console.error("❌ Falha de comunicação:", err);
-                    const errorMsg = { 
-                        id: Date.now(), 
-                        role: 'assistant', 
-                        text: "❌ Erro de conexão com a IA ou Back-End. Verifique se o servidor está ligado.", 
-                        image: null 
-                    };
-                    setMessages(prev => [...prev, errorMsg]);
-                }
+                // O Back-End devolve a resposta da IA. Adicionamos ela à tela.
+                const aiMsg = { 
+                    id: dadosRetorno.iaMensagem.id, 
+                    role: 'assistant', 
+                    text: dadosRetorno.iaMensagem.texto, 
+                    image: null 
+                };
+                setMessages(prev => [...prev, aiMsg]);
             } else {
-                console.error("Erro no upload da imagem:", uploadError);
+                throw new Error("Falha no servidor");
             }
-        } else {
-            await supabase.from('mensagens').insert([{ consulta_id: consultaId, role: 'user', texto: textToSend, imagem_url: null }]);
-            const avisoMsg = { id: Date.now(), role: 'assistant', text: "Para realizar a triagem, por favor, anexe uma imagem nítida da lesão.", image: null };
-            setMessages(prev => [...prev, avisoMsg]);
+
+        } catch (err) {
+            console.error("❌ Falha de comunicação:", err);
+            const errorMsg = { 
+                id: Date.now(), 
+                role: 'assistant', 
+                text: "❌ Erro de conexão com o Back-End. Verifique se o servidor está ligado.", 
+                image: null 
+            };
+            setMessages(prev => [...prev, errorMsg]);
         }
         
         setLoading(false);
@@ -236,13 +231,10 @@ function PatientChat() {
     // ==========================================
     // FUNÇÃO DE LOGOUT SEGURO
     // ==========================================
-    const fazerLogout = async () => {
-        try {
-            await supabase.auth.signOut(); 
-            window.location.replace('/'); 
-        } catch (error) {
-            console.error("Erro ao fazer logout:", error);
-        }
+    const fazerLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        navigate('/'); 
     };
 
     // ==========================================
@@ -296,10 +288,7 @@ function PatientChat() {
             
             <div className="flex-1 flex flex-col relative bg-[#343541]">
                 
-                {/* NOVA BARRA SUPERIOR DE LOGOUT 
-                  Em vez de flutuar (absolute), ela é um bloco que ocupa a parte de cima, 
-                  empurrando o ChatHeader para baixo sem sobrepor nada!
-                */}
+                {/* NOVA BARRA SUPERIOR DE LOGOUT */}
                 <div className="w-full flex justify-end px-4 py-3 bg-[#202123] border-b border-gray-700">
                     <button 
                         onClick={fazerLogout}
@@ -310,7 +299,6 @@ function PatientChat() {
                     </button>
                 </div>
 
-                {/* O ChatHeader agora fica em segurança logo abaixo */}
                 <ChatHeader selectedAI={selectedAI} setSelectedAI={setSelectedAI} selectedPrompt={selectedPrompt} setSelectedPrompt={setSelectedPrompt} />
                 
                 <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll pb-40">

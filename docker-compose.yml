@@ -21,8 +21,11 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      # Preparação para a Fase 2 (Ligação ao PostgreSQL)
       - DATABASE_URL=postgresql://smartderm_user:SenhaForte2026@postgres:5432/smartderm_db
+      - MINIO_ROOT_USER=minio_smartderm
+      - MINIO_ROOT_PASSWORD=SmartDermStorage2026
+      - JWT_SECRET=ARTORIA
+      - GEMINI_API_KEY=AIzaSyA__ltil4eumRwsnCPnw4pSubBVmBogFZ8
     depends_on:
       - postgres
       - minio
@@ -50,7 +53,7 @@ services:
     image: minio/minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: admin_smartderm
+      MINIO_ROOT_USER: minio_smartderm
       MINIO_ROOT_PASSWORD: SmartDermStorage2026 # Tem de ter no mínimo 8 caracteres
     ports:
       - "9000:9000" # Porta da API (Onde o Back-End vai enviar a foto)
@@ -66,41 +69,3 @@ services:
 volumes:
   pg_data:
   minio_data:
-
-# services:
-#   backend:
-#     build: ./BackEnd
-#     expose:
-#       - "3000"  
-#     environment:
-#       - PORT=3000
-#     restart: always
-
-#   frontend:
-#     build: ./FrontEnd
-#     expose:
-#       - "5173"
-#     tty: true
-#     stdin_open: true
-#     depends_on:
-#       - backend
-#     restart: always
-
-# services:
-#   backend:
-#     build: ./BackEnd
-#     expose:
-#       - "3000"  
-#     environment:
-#       - PORT=3000
-#     restart: always
-
-#   frontend:
-#     build: ./FrontEnd
-#     expose:
-#       - "5173"
-#     tty: true
-#     stdin_open: true
-#     depends_on:
-#       - backend
-#     restart: always
