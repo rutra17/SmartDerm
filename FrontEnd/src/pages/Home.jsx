@@ -21,11 +21,8 @@ function Home() {
 
         runAnimation();
 
-        const interval = setInterval(runAnimation, 10000);
-
         return () => {
-            clearInterval(interval);
-            timeouts.forEach(clearTimeout);
+            timeouts.forEach(t => clearTimeout(t));
         };
     }, []);
     return (
@@ -232,18 +229,28 @@ function Home() {
                                 )}
 
                                 {step >= 6 && (
-                                    <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
-                                        <p className="font-semibold text-green-300 mb-2">
-                                            Revisão médica concluída
-                                        </p>
+    <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
+        <p className="font-semibold text-green-300 mb-3">
+            Laudo Médico
+        </p>
 
-                                        <p className="text-sm text-gray-300">
-                                            Os achados indicam necessidade de avaliação
-                                            dermatológica especializada.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+        <div className="text-sm text-gray-300 space-y-2">
+            <p>
+                <strong>Parecer:</strong> Lesão pigmentada apresentando
+                assimetria discreta, bordas irregulares e variação de coloração.
+            </p>
+
+            <p>
+                <strong>Conclusão:</strong> Achados compatíveis com lesão
+                melanocítica que requer acompanhamento clínico.
+            </p>
+
+            <p>
+                <strong>Status:</strong> Relatório revisado e validado pelo médico.
+            </p>
+        </div>
+    </div>
+)}                             </div>
 
                             <div className="mt-8">
                                 <div className="flex justify-between text-sm mb-2">
