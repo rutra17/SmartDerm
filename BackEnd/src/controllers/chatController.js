@@ -11,12 +11,17 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const criarConsulta = async (req, res) => {
     try {
-        const { nome_paciente } = req.body;
+        const { nome_paciente, medicoId } = req.body; // Agora recebe o medicoId
         const novaConsulta = await prisma.consulta.create({
-            data: { nome_paciente, pacienteId: req.usuario.id }
+            data: {
+                nome_paciente,
+                pacienteId: req.usuario.id,
+                medicoId: medicoId || null // Guarda o médico escolhido, ou nulo se não escolheu
+            }
         });
         res.status(201).json(novaConsulta);
     } catch (error) {
+        console.error("Erro ao criar consulta:", error);
         res.status(500).json({ erro: "Erro ao criar consulta" });
     }
 };
@@ -46,6 +51,17 @@ export const listarMensagens = async (req, res) => {
     }
 };
 
+export const listarMedicos = async (req, res) => {
+    try {
+        const medicos = await prisma.medico.findMany({
+            select: { id: true, nome: true, crm: true }
+        });
+        res.json(medicos);
+    } catch (error) {
+        res.status(500).json({ erro: "Erro ao buscar a lista de médicos." });
+    }
+};
+
 export const enviarMensagem = async (req, res) => {
     try {
         const { consultaId, texto, ia_utilizada, prompt_utilizado } = req.body;
@@ -54,20 +70,48 @@ export const enviarMensagem = async (req, res) => {
         let imagemUrl = null;
         let conteudoParaIA = [];
 
-        // 1. O paciente enviou texto? Adiciona ao pacote da IA.
-        const textoUsuario = texto || "Por favor, analise esta imagem dermatológica e indique possíveis características clínicas de forma preliminar.";
-        conteudoParaIA.push(textoUsuario);
+        // 1. Verifica se o paciente realmente escreveu algo ou se só mandou a foto
+        // (O Front-End envia "Imagem enviada para triagem." quando o campo de texto está vazio)
+        const temRelato = texto && texto.trim() !== "" && texto.trim() !== "Imagem enviada para triagem.";
+        const textoDoPaciente = temRelato ? texto.trim() : "Imagem enviada para triagem.";
 
-        // 2. O paciente enviou foto? Guarda no MinIO e prepara para o Gemini.
+        // ---------------------------------------------------------
+        // 2. ENGENHARIA DE PROMPTS (A "Personalidade" da IA)
+        // ---------------------------------------------------------
+        let instrucaoEspecial = "";
+        
+        switch (prompt_utilizado) {
+            case 'urgencia':
+                instrucaoEspecial = "Você é um médico especialista em triagem de emergência dermatológica. A sua análise deve focar EXCLUSIVAMENTE em identificar ou descartar sinais de alerta vermelho (ex: ABCDE do melanoma avançado, necrose, infecção grave). Seja curto, direto e classifique o nível de urgência imediatamente.";
+                break;
+            case 'detalhado':
+                instrucaoEspecial = "Você é um Dermatologista Sênior e Acadêmico. Faça um relatório exaustivo, técnico e estruturado contendo obrigatoriamente: 1. Descrição Morfológica Detalhada, 2. Análise de Bordas e Padrão de Cores, 3. Lista de Diagnósticos Diferenciais (do mais provável ao menos provável) com justificativas, 4. Próximos passos recomendados para biópsia ou conduta.";
+                break;
+            default: // 'padrao'
+                instrucaoEspecial = "Você é um assistente de pré-triagem dermatológica. Forneça uma análise clínica objetiva, educada e preliminar da lesão mostrada, listando possíveis hipóteses comuns.";
+        }
+
+        // 3. A MÁGICA DO CONTEXTO (Juntando a história com as instruções)
+        let textoFinalParaIA = `[INSTRUÇÃO DE SISTEMA]: ${instrucaoEspecial}\n\n`;
+
+        if (temRelato) {
+            textoFinalParaIA += `[CONTEXTO CLÍNICO]: O paciente relatou a seguinte história sobre a lesão: "${textoDoPaciente}". Por favor, correlacione obrigatoriamente este relato com os achados visuais na imagem de forma empática e clínica.`;
+        } else {
+            textoFinalParaIA += `[CONTEXTO CLÍNICO]: O paciente não enviou nenhuma história clínica ou relato em texto, forneceu apenas a imagem. Faça a sua análise baseando-se estritamente na avaliação morfológica visual da imagem.`;
+        }
+        
+        conteudoParaIA.push(textoFinalParaIA);
+
+        // ---------------------------------------------------------
+        // 4. PROCESSAMENTO DA IMAGEM E MINIO
+        // ---------------------------------------------------------
         if (imagem) {
             const extensao = imagem.originalname.split('.').pop();
             const nomeArquivo = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${extensao}`;
 
-            // Guarda no MinIO
             await minioClient.putObject(BUCKET_NAME, nomeArquivo, imagem.buffer, imagem.size);
             imagemUrl = `http://localhost:9000/${BUCKET_NAME}/${nomeArquivo}`;
 
-            // Prepara a foto para a IA (Formato InlineData que o Gemini exige)
             conteudoParaIA.push({
                 inlineData: {
                     data: imagem.buffer.toString("base64"),
@@ -81,24 +125,25 @@ export const enviarMensagem = async (req, res) => {
             data: {
                 consultaId,
                 role: 'user',
-                texto: textoUsuario,
+                texto: textoDoPaciente,
                 imagem_url: imagemUrl
             }
         });
 
-        // 3. O MOMENTO DA VERDADE: Chama o Google Gemini
+        // ---------------------------------------------------------
+        // 5. CHAMADA AO GOOGLE GEMINI
+        // ---------------------------------------------------------
         let textoIA = "";
         try {
-            // Usamos o modelo flash por ser o mais rápido e preparado para visão (fotos)
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const result = await model.generateContent(conteudoParaIA);
             textoIA = result.response.text();
         } catch (iaError) {
             console.error("Erro na API do Gemini:", iaError);
-            textoIA = "Peço desculpa, mas o meu sistema de análise visual está temporariamente indisponível. A sua imagem foi guardada e um médico humano irá avaliá-la em breve.";
+            textoIA = "⚠️ Erro: Falha ao gerar o laudo com a IA. A imagem e o seu relato foram guardados em segurança para análise médica humana.";
         }
 
-        // 4. Grava a resposta magistral da IA no banco
+        // Grava a resposta da IA no banco
         const iaMensagem = await prisma.mensagem.create({
             data: {
                 consultaId,

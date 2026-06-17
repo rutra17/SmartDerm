@@ -25,7 +25,7 @@ services:
       - MINIO_ROOT_USER=minio_smartderm
       - MINIO_ROOT_PASSWORD=SmartDermStorage2026
       - JWT_SECRET=ARTORIA
-      - GEMINI_API_KEY=AIzaSyA__ltil4eumRwsnCPnw4pSubBVmBogFZ8
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - postgres
       - minio
