@@ -229,28 +229,28 @@ function Home() {
                                 )}
 
                                 {step >= 6 && (
-    <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
-        <p className="font-semibold text-green-300 mb-3">
-            Laudo Médico
-        </p>
+                                    <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
+                                        <p className="font-semibold text-green-300 mb-3">
+                                            Laudo Médico
+                                        </p>
 
-        <div className="text-sm text-gray-300 space-y-2">
-            <p>
-                <strong>Parecer:</strong> Lesão pigmentada apresentando
-                assimetria discreta, bordas irregulares e variação de coloração.
-            </p>
+                                        <div className="text-sm text-gray-300 space-y-2">
+                                            <p>
+                                                <strong>Parecer:</strong> Lesão pigmentada apresentando
+                                                assimetria discreta, bordas irregulares e variação de coloração.
+                                            </p>
 
-            <p>
-                <strong>Conclusão:</strong> Achados compatíveis com lesão
-                melanocítica que requer acompanhamento clínico.
-            </p>
+                                            <p>
+                                                <strong>Conclusão:</strong> Achados compatíveis com lesão
+                                                melanocítica que requer acompanhamento clínico.
+                                            </p>
 
-            <p>
-                <strong>Status:</strong> Relatório revisado e validado pelo médico.
-            </p>
-        </div>
-    </div>
-)}                             </div>
+                                            <p>
+                                                <strong>Status:</strong> Relatório revisado e validado pelo médico.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}                             </div>
 
                             <div className="mt-8">
                                 <div className="flex justify-between text-sm mb-2">
