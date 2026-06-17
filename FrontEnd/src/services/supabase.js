@@ -5,4 +5,4 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Inicializando e exportando a conexão
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = null;

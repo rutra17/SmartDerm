@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../services/supabase';
 
 function Register() {
     const navigate = useNavigate();
@@ -9,6 +8,7 @@ function Register() {
     const [tipoConta, setTipoConta] = useState('paciente');
     const [identificador, setIdentificador] = useState('');
     const [nomeCompleto, setNomeCompleto] = useState('');
+    const [email, setEmail] = useState(''); // NOVO ESTADO: E-mail real
     const [senha, setSenha] = useState('');
     const [codigoAutorizacao, setCodigoAutorizacao] = useState('');
     const [genero, setGenero] = useState('');
@@ -20,9 +20,11 @@ function Register() {
     const [bairro, setBairro] = useState('');
     const [cidade, setCidade] = useState('');
     const [estado, setEstado] = useState('');
-    const [cepStatus, setCepStatus] = useState(''); // Feedback para o utilizador
+    const [referencia, setReferencia] = useState(''); 
+    const [cepStatus, setCepStatus] = useState(''); 
 
     const [loading, setLoading] = useState(false);
+    const [erro, setErro] = useState(''); 
 
     // --- CHAVES DE SEGURANÇA ---
     const CHAVE_MEDICO = "MEDICO2026";
@@ -49,7 +51,6 @@ function Register() {
         let valor = e.target.value;
         const cepLimpo = valor.replace(/\D/g, '');
         
-        // Aplica a máscara 00000-000 visualmente
         if (cepLimpo.length > 5) {
             valor = cepLimpo.replace(/^(\d{5})(\d)/, "$1-$2");
         } else {
@@ -70,83 +71,88 @@ function Register() {
                     return;
                 }
 
-                // Preenche os campos
                 setRua(data.logradouro);
                 setBairro(data.bairro);
                 setCidade(data.localidade);
                 setEstado(data.uf);
                 setCepStatus('✅ Encontrado');
                 
-                // Salta o foco para o número
                 document.getElementById('numero-input')?.focus();
 
             } catch (error) {
                 setCepStatus('❌ Erro na busca');
             }
         } else {
-            setCepStatus(''); // Limpa o status se o CEP estiver incompleto
+            setCepStatus('');
         }
     };
 
     // ==========================================
-    // 3. REGISTO NO SUPABASE
+    // 3. REGISTO NO NOSSO BACK-END (PRISMA)
     // ==========================================
     const handleCadastro = async (e) => {
         e.preventDefault();
+        setErro('');
 
-        // Verificação de Segurança
         if (tipoConta === 'medico' && codigoAutorizacao !== CHAVE_MEDICO) {
-            alert("❌ Código de Médico inválido! Solicite o token correto à administração.");
-            return;
+            setErro("❌ Código de Médico inválido! Solicite o token correto."); return;
         }
         if (tipoConta === 'cientista' && codigoAutorizacao !== CHAVE_CIENTISTA) {
-            alert("❌ Código de Pesquisador/Cientista inválido! Acesso negado.");
-            return;
+            setErro("❌ Código de Cientista inválido! Acesso negado."); return;
         }
 
         setLoading(true);
-        let emailMontado = "";
+        let usernameFinal = "";
 
-        // Montagem do Email do Supabase
         if (tipoConta === 'paciente') {
             const cpf = identificador.replace(/\D/g, '');
-            if (cpf.length !== 11) { alert("CPF incompleto!"); setLoading(false); return; }
-            emailMontado = `${cpf}@paciente.smartderm.com`;
+            if (cpf.length !== 11) { setErro("CPF incompleto!"); setLoading(false); return; }
+            usernameFinal = cpf;
         } else if (tipoConta === 'medico') {
-            emailMontado = `${identificador}@medico.smartderm.com`;
+            usernameFinal = identificador.replace(/\D/g, '');
         } else if (tipoConta === 'cientista') {
-            const user = identificador.toLowerCase().replace(/\s/g, '_');
-            emailMontado = `${user}@cientista.smartderm.com`;
+            usernameFinal = identificador.toLowerCase().replace(/\s/g, '_');
         }
 
-        // Formata o endereço final
-        const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}, CEP: ${cep}`;
+        const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}`;
 
-        // Cadastrar no Supabase Auth com todos os MetaDados
-        const { data, error } = await supabase.auth.signUp({
-            email: emailMontado,
-            password: senha,
-            options: {
-                data: {
-                    nome: nomeCompleto,
-                    tipo_conta: tipoConta,
-                    genero: genero,
-                    cep: cep,
-                    endereco_completo: enderecoCompleto,
-                    cidade_estado: `${cidade}/${estado}`
-                }
+        // Pacote de dados atualizado com o E-mail real do estado
+        const payload = {
+            username: usernameFinal,
+            senha: senha,
+            nome: nomeCompleto,
+            email: email, // Agora enviamos o e-mail que o utilizador digitou
+            tipo: tipoConta,
+            dadoEspecifico: identificador,
+            genero: genero,
+            cep: cep,
+            endereco: enderecoCompleto,
+            referencia: referencia
+        };
+
+        try {
+            const resposta = await fetch('http://localhost:3000/api/auth/registar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                setErro(`❌ ${dados.erro || "Erro ao criar conta."}`);
+                setLoading(false);
+                return;
             }
-        });
 
-        if (error) {
+            alert(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso!`);
+            navigate('/');
+            
+        } catch (error) {
             console.error("Erro no cadastro:", error);
-            alert("Erro ao criar conta. Talvez este utilizador já exista.");
-            setLoading(false);
-            return;
+            setErro("❌ Erro ao conectar com o servidor.");
         }
 
-        alert(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso! Já pode fazer o login.`);
-        navigate('/');
         setLoading(false);
     };
 
@@ -155,11 +161,12 @@ function Register() {
     // ==========================================
     return (
         <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center p-4 font-sans py-10">
-            {/* Aumentei a largura máxima de max-w-md para max-w-2xl para acomodar os campos lado a lado */}
             <div className="bg-[#343541] w-full max-w-2xl rounded-2xl shadow-2xl p-8 border border-gray-700">
                 
                 <h2 className="text-2xl font-bold text-white mb-2 text-center">Novo Registo</h2>
                 <p className="text-gray-400 text-sm text-center mb-6">Crie a sua conta no SmartDerm AI</p>
+
+                {erro && <div className="mb-4 p-3 bg-red-900 border border-red-500 text-red-100 rounded text-sm text-center">{erro}</div>}
 
                 <form onSubmit={handleCadastro} className="space-y-5">
                     
@@ -174,7 +181,7 @@ function Register() {
                             >
                                 <option value="paciente">👤 Paciente</option>
                                 <option value="medico">🩺 Médico Especialista</option>
-                                <option value="cientista">🔬 Cientista de Dados (Pesquisa)</option>
+                                <option value="cientista">🔬 Cientista de Dados</option>
                             </select>
                         </div>
 
@@ -192,12 +199,20 @@ function Register() {
                         ) : <div className="hidden md:block"></div>}
                     </div>
 
-                    {/* DADOS PESSOAIS */}
+                    {/* DADOS PESSOAIS - Modificado para incluir E-mail */}
+                    <div>
+                        <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Nome Completo</label>
+                        <input 
+                            type="text" required value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva"
+                            className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
+                        />
+                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Nome Completo</label>
+                            <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">E-mail Real</label>
                             <input 
-                                type="text" required value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva"
+                                type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@exemplo.com"
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
                             />
                         </div>
@@ -283,6 +298,15 @@ function Register() {
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-gray-400 cursor-not-allowed outline-none"
                             />
                         </div>
+                    </div>
+
+                    {/* ENDEREÇO LINHA 3: PONTO DE REFERÊNCIA */}
+                    <div>
+                        <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Ponto de Referência</label>
+                        <input 
+                            type="text" value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ex: Próximo ao supermercado, em frente à praça..."
+                            className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500"
+                        />
                     </div>
 
                     <button 

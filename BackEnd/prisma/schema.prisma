@@ -16,6 +16,10 @@ model Paciente {
   senha     String     // Será guardada com hash (Bcrypt)
   nome      String
   email     String     @unique // Continua único, mas não é usado para login
+  genero     String?
+  cep        String?
+  endereco   String?
+  referencia String?
   cpf       String?    @unique // Exemplo de campo específico
   criadoEm  DateTime   @default(now())
   
@@ -31,6 +35,10 @@ model Medico {
   senha     String
   nome      String
   email     String     @unique
+  genero     String?
+  cep        String?
+  endereco   String?
+  referencia String?
   crm       String     @unique // Campo obrigatório e específico para médicos
   criadoEm  DateTime   @default(now())
   
@@ -46,6 +54,10 @@ model Cientista {
   senha       String
   nome        String
   email       String     @unique
+  genero     String?
+  cep        String?
+  endereco   String?
+  referencia String?
   instituicao String?    // Campo específico para cientistas/pesquisadores
   criadoEm    DateTime   @default(now())
 }

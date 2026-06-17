@@ -1,58 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '../services/supabase';
 
-export default function ProtectedRoute({ children, allowedRoles }) {
-    const [loading, setLoading] = useState(true);
-    const [isAuthorized, setIsAuthorized] = useState(false);
-
-    useEffect(() => {
-        const verificarAcesso = async () => {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-
-                if (error || !session) {
-                    setIsAuthorized(false);
-                    setLoading(false);
-                    return;
-                }
-
-                // Extrai o tipo de conta (cargo) dos metadados
-                const tipoConta = session.user.user_metadata?.tipo_conta;
-                
-                // Console.log para o ajudar a debugar se der erro
-                console.log("🔒 Segurança verificando. Cargo encontrado:", tipoConta);
-
-                if (allowedRoles.includes(tipoConta)) {
-                    setIsAuthorized(true);
-                } else {
-                    // Está logado mas tentou entrar num painel que não é dele
-                    console.warn(`Acesso negado. A rota exige ${allowedRoles}, mas o utilizador é ${tipoConta}`);
-                    setIsAuthorized(false);
-                }
-            } catch (err) {
-                console.error("Erro no ProtectedRoute:", err);
-                setIsAuthorized(false);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        verificarAcesso();
-    }, [allowedRoles]);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#202123] flex items-center justify-center">
-                <p className="animate-pulse text-emerald-500 font-bold">Validando credenciais de segurança...</p>
-            </div>
-        );
-    }
-
-    if (!isAuthorized) {
-        // Usa o replace para destruir o histórico de navegação
+const ProtectedRoute = ({ children, allowedRoles }) => {
+    // 1. Procura o Token no cofre do navegador
+    const token = localStorage.getItem('token');
+    // 2. Procura os dados do utilizador que guardámos no momento do login
+    const usuarioString = localStorage.getItem('usuario');
+    
+    // Se não tiver token, expulsa para a tela de login inicial
+    if (!token || !usuarioString) {
         return <Navigate to="/" replace />;
     }
 
-    return children;
-}
+    try {
+        const usuario = JSON.parse(usuarioString);
+
+        // Se o tipo do utilizador logado não estiver na lista de permitidos (ex: um Paciente a tentar acessar a rota do Médico)
+        if (allowedRoles && !allowedRoles.includes(usuario.tipo)) {
+            // Pode redirecionar para uma página de "Acesso Negado" ou forçar logout
+            return <Navigate to="/" replace />;
+        }
+
+        // Se tudo estiver certo, renderiza a página que ele pediu!
+        return children;
+        
+    } catch (error) {
+        // Se der erro ao ler os dados, limpa tudo e expulsa
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        return <Navigate to="/" replace />;
+    }
+};
+
+export default ProtectedRoute;

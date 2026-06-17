@@ -88,7 +88,11 @@ export const registrar = async (req, res) => {
                     senha: senhaHash,
                     nome,
                     email,
-                    cpf: dadoEspecifico // opcional no momento
+                    cpf: dadoEspecifico,
+                    genero,          
+                    cep,              
+                    endereco,         
+                    referencia        
                 }
             });
         } else if (tipo === 'medico') {
@@ -98,7 +102,11 @@ export const registrar = async (req, res) => {
                     senha: senhaHash,
                     nome,
                     email,
-                    crm: dadoEspecifico // obrigatório para médico
+                    crm: dadoEspecifico,
+                    genero,           
+                    cep,              
+                    endereco,         
+                    referencia        
                 }
             });
         } else {

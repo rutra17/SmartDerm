@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
-import { supabase } from './services/supabase';
 
 // Importação das suas páginas
 import PatientChat from './pages/PatientChat';
@@ -9,11 +8,11 @@ import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 
-// Importação do Componente de Segurança (Garanta que o caminho está correto)
+// Importação do Componente de Segurança
 import ProtectedRoute from './components/ProtectedRoute'; 
 
 // ========================================================
-// COMPONENTE DE LOGIN (Manteve-se a sua lógica perfeita)
+// COMPONENTE DE LOGIN (Livre do Supabase, usando a nossa API)
 // ========================================================
 function HomeGateway() {
     const navigate = useNavigate();
@@ -21,8 +20,9 @@ function HomeGateway() {
     const [identificador, setIdentificador] = useState('');
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
+    const [erro, setErro] = useState('');
 
-    // --- 1. VALIDADOR MATEMÁTICO DE CPF REAL ---
+    // --- 1. VALIDADOR MATEMÁTICO DE CPF REAL (Mantido intacto) ---
     const validarCPF = (cpf) => {
         cpf = cpf.replace(/[^\d]+/g, ''); 
         if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; 
@@ -55,50 +55,66 @@ function HomeGateway() {
         setIdentificador(valorDigitado);
     };
 
-    // --- 2. LOGIN UNIFICADO E SEGURO COM O SUPABASE ---
+    // --- 2. NOVO LOGIN COM O NOSSO BACK-END (JWT) ---
     const handleLogin = async (e) => {
         e.preventDefault();
+        setErro('');
         
         if (!identificador || !senha) {
-            alert("Por favor, preencha o seu identificador e a senha."); return;
-        }
-
-        setLoading(true);
-        let emailMontado = "";
-
-        if (loginType === 'paciente') {
-            const cpfNumeros = identificador.replace(/\D/g, ''); 
-            if (!validarCPF(cpfNumeros)) {
-                alert("❌ O CPF introduzido não é válido matematicamente.");
-                setLoading(false); return;
-            }
-            emailMontado = `${cpfNumeros}@paciente.smartderm.com`;
-        } 
-        else if (loginType === 'medico') {
-            const crmNumeros = identificador.replace(/\D/g, '');
-            emailMontado = `${crmNumeros}@medico.smartderm.com`;
-        } 
-        else if (loginType === 'cientista') {
-            const userFormatado = identificador.toLowerCase().replace(/\s/g, '_');
-            emailMontado = `${userFormatado}@cientista.smartderm.com`;
-        }
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: emailMontado,
-            password: senha,
-        });
-
-        if (error) {
-            console.error("Erro no login:", error.message);
-            alert("❌ Credenciais incorretas ou utilizador não registado.");
-            setLoading(false);
+            setErro("Por favor, preencha o seu identificador e a senha."); 
             return;
         }
 
-        console.log(`✅ Login de ${loginType} realizado com sucesso!`);
-        if (loginType === 'paciente') navigate('/paciente');
-        else if (loginType === 'medico') navigate('/medico');
-        else if (loginType === 'cientista') navigate('/cientista');
+        setLoading(true);
+        let usernameFinal = "";
+
+        // Formata o username consoante o tipo selecionado
+        if (loginType === 'paciente') {
+            const cpfNumeros = identificador.replace(/\D/g, ''); 
+            if (!validarCPF(cpfNumeros)) {
+                setErro("❌ O CPF introduzido não é válido.");
+                setLoading(false); return;
+            }
+            usernameFinal = cpfNumeros; // O back-end guardou o username limpo
+        } 
+        else if (loginType === 'medico') {
+            usernameFinal = identificador.replace(/\D/g, ''); // Ex: CRM limpo
+        } 
+        else if (loginType === 'cientista') {
+            usernameFinal = identificador.toLowerCase().replace(/\s/g, '_');
+        }
+
+        try {
+            // Chamada à nossa API!
+            const resposta = await fetch('http://localhost:3000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameFinal, senha })
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                setErro(`❌ ${dados.erro || "Credenciais incorretas."}`);
+                setLoading(false);
+                return;
+            }
+
+            console.log(`✅ Login de ${dados.usuario.tipo} realizado com sucesso!`);
+            
+            // Guarda o Token e os dados do utilizador no cofre do navegador
+            localStorage.setItem('token', dados.token);
+            localStorage.setItem('usuario', JSON.stringify(dados.usuario));
+
+            // Redirecionamento baseado na resposta do Back-End
+            if (dados.usuario.tipo === 'paciente') navigate('/paciente');
+            else if (dados.usuario.tipo === 'medico') navigate('/medico');
+            else if (dados.usuario.tipo === 'cientista') navigate('/cientista');
+
+        } catch (error) {
+            console.error("Erro na comunicação:", error);
+            setErro("❌ Erro ao conectar com o servidor.");
+        }
 
         setLoading(false);
     };
@@ -106,6 +122,10 @@ function HomeGateway() {
     const renderLoginForm = (title, labelID, placeholderID) => (
         <div className="bg-[#343541] p-8 rounded-xl border border-gray-600 w-full max-w-md shadow-xl animate-fade-in">
             <h2 className="text-2xl font-bold mb-6 text-center text-white">{title}</h2>
+            
+            {/* Exibe o erro visualmente caso exista */}
+            {erro && <div className="mb-4 p-3 bg-red-900 border border-red-500 text-red-100 rounded text-sm text-center">{erro}</div>}
+
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 <div>
                     <label className="block text-sm text-gray-400 mb-1">{labelID}</label>
@@ -123,7 +143,7 @@ function HomeGateway() {
                 </div>
                 
                 <div className="flex gap-3 mt-4">
-                    <button type="button" onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); }} className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition">
+                    <button type="button" onClick={() => { setLoginType(null); setIdentificador(''); setSenha(''); setErro(''); }} className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded text-white font-semibold transition">
                         Voltar
                     </button>
                     <button type="submit" disabled={loading} className={`flex-1 px-4 py-3 rounded text-white font-semibold transition ${loading ? 'bg-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}>
@@ -173,17 +193,15 @@ function HomeGateway() {
 }
 
 // ========================================================
-// DEFINIÇÃO DAS ROTAS COM SEGURANÇA (ProtectedRoute)
+// DEFINIÇÃO DAS ROTAS
 // ========================================================
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* ROTAS PÚBLICAS */}
                 <Route path="/" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} /> 
                 
-                {/* ROTAS PROTEGIDAS */}
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>
                         <PatientChat />
