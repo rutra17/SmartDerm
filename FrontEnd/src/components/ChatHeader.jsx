@@ -1,63 +1,75 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedPrompt }) {
-    
-    // Lista de Prompts estática (Substitui a antiga chamada ao Supabase)
-    const listaPrompts = [
-        { titulo: 'Padrão Atual', chave_identificadora: 'padrao' },
-        { titulo: 'Triagem Severa (Urgências)', chave_identificadora: 'urgencia' },
-        { titulo: 'Análise Altamente Detalhada', chave_identificadora: 'detalhado' }
-    ];
+    const [listaPrompts, setListaPrompts] = useState([]);
 
-    // Garante que o prompt 'padrao' é selecionado caso não haja nenhum definido
     useEffect(() => {
-        if (!selectedPrompt) {
-            setSelectedPrompt('padrao');
+        carregarPrompts();
+    }, []);
+
+    const carregarPrompts = async () => {
+        try {
+            const resposta = await fetch('http://localhost:3000/api/prompts', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (resposta.ok) {
+                const data = await resposta.json();
+                setListaPrompts(data);
+                
+                // Se a lista carregar mas o selectedPrompt atual não estiver nela (ex: primeiro carregamento),
+                // selecionamos automaticamente a primeira opção do banco.
+                if (data.length > 0 && !data.find(p => p.chave === selectedPrompt)) {
+                    setSelectedPrompt(data[0].chave);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao carregar prompts dinâmicos:", error);
+            // Fallback de emergência caso a API falhe
+            setListaPrompts([{ titulo: 'Padrão (Fallback)', chave: 'padrao' }]);
         }
-    }, [selectedPrompt, setSelectedPrompt]);
+    };
 
     return (
-        <div className="w-full bg-[#202123] border-b border-white/10 p-4 flex flex-wrap justify-between items-center gap-4 shadow-md">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3 bg-[#343541] border-b border-gray-600/50 shadow-sm gap-4 z-10">
+            
             <div className="flex items-center gap-2">
-                <span className="text-xl">🏥</span>
-                <h1 className="text-lg font-bold text-white">SmartDerm AI</h1>
+                <span className="text-xl">🤖</span>
+                <h1 className="text-gray-200 font-semibold text-lg">SmartDerm IA</h1>
             </div>
 
-            {/* Controles de Configuração da IA */}
-            <div className="flex items-center gap-4">
-                
-                {/* Seletor de Modelo de IA */}
-                <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-400 font-semibold uppercase">Modelo:</label>
-                    <select 
-                        value={selectedAI} 
-                        onChange={(e) => setSelectedAI(e.target.value)}
-                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium"
-                    >
-                        <option value="gemini">Gemini 2.5 Flash</option>
-                        <option value="openai">ChatGPT 4o</option>
-                        <option value="deepseek">DeepSeek R1</option>
-                        <option value="simulacao">⚠️ Modo Simulação</option>
-                    </select>
-                </div>
+            <div className="flex gap-3 w-full sm:w-auto">
+                {/* Select do Modelo de IA */}
+                <select
+                    value={selectedAI}
+                    onChange={(e) => setSelectedAI(e.target.value)}
+                    className="flex-1 sm:flex-none bg-[#444654] border border-gray-600 text-gray-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 shadow-sm transition hover:bg-[#4b4d5c]"
+                >
+                    <option value="gemini">Gemini 2.5 Flash</option>
+                    <option value="openai" disabled>GPT-4o (Em breve)</option>
+                    <option value="deepseek" disabled>DeepSeek (Em breve)</option>
+                </select>
 
-                {/* Seletor Dinâmico de Prompts */}
-                <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-400 font-semibold uppercase">Prompt:</label>
-                    <select 
-                        value={selectedPrompt} 
-                        onChange={(e) => setSelectedPrompt(e.target.value)}
-                        className="bg-[#343541] border border-gray-600 rounded p-1.5 text-sm text-white focus:outline-none focus:border-purple-500 font-medium max-w-[200px]"
-                    >
-                        {listaPrompts.map(p => (
-                            <option key={p.chave_identificadora} value={p.chave_identificadora}>
-                                {p.titulo}
+                {/* Select Dinâmico do Prompt */}
+                <select
+                    value={selectedPrompt}
+                    onChange={(e) => setSelectedPrompt(e.target.value)}
+                    className="flex-1 sm:flex-none bg-[#444654] border border-purple-500/50 text-gray-200 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-2 shadow-sm transition hover:bg-[#4b4d5c]"
+                >
+                    {listaPrompts.length === 0 ? (
+                        <option value="padrao">A carregar...</option>
+                    ) : (
+                        listaPrompts.map(prompt => (
+                            <option key={prompt.chave} value={prompt.chave}>
+                                {prompt.titulo}
                             </option>
-                        ))}
-                    </select>
-                </div>
-
+                        ))
+                    )}
+                </select>
             </div>
+            
         </div>
     );
 }

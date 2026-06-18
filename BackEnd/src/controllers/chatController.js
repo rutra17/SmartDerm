@@ -70,28 +70,39 @@ export const enviarMensagem = async (req, res) => {
         let imagemUrl = null;
         let conteudoParaIA = [];
 
-        // 1. Verifica se o paciente realmente escreveu algo ou se só mandou a foto
-        // (O Front-End envia "Imagem enviada para triagem." quando o campo de texto está vazio)
         const temRelato = texto && texto.trim() !== "" && texto.trim() !== "Imagem enviada para triagem.";
         const textoDoPaciente = temRelato ? texto.trim() : "Imagem enviada para triagem.";
 
         // ---------------------------------------------------------
-        // 2. ENGENHARIA DE PROMPTS (A "Personalidade" da IA)
+        // 1. ENGENHARIA DE PROMPTS (Buscando do PostgreSQL)
         // ---------------------------------------------------------
-        let instrucaoEspecial = "";
-        
-        switch (prompt_utilizado) {
-            case 'urgencia':
-                instrucaoEspecial = "Você é um médico especialista em triagem de emergência dermatológica. A sua análise deve focar EXCLUSIVAMENTE em identificar ou descartar sinais de alerta vermelho (ex: ABCDE do melanoma avançado, necrose, infecção grave). Seja curto, direto e classifique o nível de urgência imediatamente.";
-                break;
-            case 'detalhado':
-                instrucaoEspecial = "Você é um Dermatologista Sênior e Acadêmico. Faça um relatório exaustivo, técnico e estruturado contendo obrigatoriamente: 1. Descrição Morfológica Detalhada, 2. Análise de Bordas e Padrão de Cores, 3. Lista de Diagnósticos Diferenciais (do mais provável ao menos provável) com justificativas, 4. Próximos passos recomendados para biópsia ou conduta.";
-                break;
-            default: // 'padrao'
-                instrucaoEspecial = "Você é um assistente de pré-triagem dermatológica. Forneça uma análise clínica objetiva, educada e preliminar da lesão mostrada, listando possíveis hipóteses comuns.";
+        // Fallback de segurança absoluto (caso o banco de dados falhe ou o prompt seja apagado)
+        let instrucaoEspecial = "Você é um assistente de pré-triagem dermatológica. Forneça uma análise clínica objetiva, educada e preliminar da lesão mostrada.";
+
+        try {
+            // Procura a instrução exata que o usuário selecionou no Front-End
+            const promptDb = await prisma.prompt.findUnique({
+                where: { chave: prompt_utilizado }
+            });
+
+            if (promptDb && promptDb.ativo) {
+                instrucaoEspecial = promptDb.instrucao;
+            } else if (prompt_utilizado !== 'padrao') {
+                // Se a IA pedir um prompt que foi apagado/desativado, tenta puxar o padrão
+                const promptPadrao = await prisma.prompt.findUnique({
+                    where: { chave: 'padrao' }
+                });
+                if (promptPadrao && promptPadrao.ativo) {
+                    instrucaoEspecial = promptPadrao.instrucao;
+                }
+            }
+        } catch (dbError) {
+            console.error("Erro ao buscar prompt dinâmico, usando rede de segurança:", dbError);
         }
 
-        // 3. A MÁGICA DO CONTEXTO (Juntando a história com as instruções)
+        // ---------------------------------------------------------
+        // 2. A MÁGICA DO CONTEXTO
+        // ---------------------------------------------------------
         let textoFinalParaIA = `[INSTRUÇÃO DE SISTEMA]: ${instrucaoEspecial}\n\n`;
 
         if (temRelato) {
@@ -103,7 +114,7 @@ export const enviarMensagem = async (req, res) => {
         conteudoParaIA.push(textoFinalParaIA);
 
         // ---------------------------------------------------------
-        // 4. PROCESSAMENTO DA IMAGEM E MINIO
+        // 3. PROCESSAMENTO DA IMAGEM E MINIO
         // ---------------------------------------------------------
         if (imagem) {
             const extensao = imagem.originalname.split('.').pop();
@@ -131,7 +142,7 @@ export const enviarMensagem = async (req, res) => {
         });
 
         // ---------------------------------------------------------
-        // 5. CHAMADA AO GOOGLE GEMINI
+        // 4. CHAMADA AO GOOGLE GEMINI
         // ---------------------------------------------------------
         let textoIA = "";
         try {
@@ -159,5 +170,19 @@ export const enviarMensagem = async (req, res) => {
     } catch (error) {
         console.error("Erro no chat:", error);
         res.status(500).json({ erro: "Erro interno ao processar a mensagem." });
+    }
+};
+// Busca os prompts ativos para exibir no menu do paciente
+export const listarPromptsAtivos = async (req, res) => {
+    try {
+        const prompts = await prisma.prompt.findMany({
+            where: { ativo: true },
+            select: { titulo: true, chave: true }, // Só precisamos do nome e da chave para o menu
+            orderBy: { criadoEm: 'asc' }
+        });
+        res.json(prompts);
+    } catch (error) {
+        console.error("Erro ao buscar prompts ativos:", error);
+        res.status(500).json({ erro: "Erro ao buscar prompts." });
     }
 };

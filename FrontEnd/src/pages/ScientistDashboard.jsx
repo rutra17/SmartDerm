@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
 
-function ScientistPanel() {
+function ScientistDashboard() {
     const [carregando, setCarregando] = useState(true);
     const [abaAtiva, setAbaAtiva] = useState('dashboard');
 
@@ -17,7 +16,7 @@ function ScientistPanel() {
 
     // Estados da Engenharia de Prompts
     const [listaPrompts, setListaPrompts] = useState([]);
-    const [novoPrompt, setNovoPrompt] = useState({ titulo: '', chave: '', comando: '' });
+    const [novoPrompt, setNovoPrompt] = useState({ titulo: '', chave: '', instrucao: '' });
     const [salvandoPrompt, setSalvandoPrompt] = useState(false);
     const [promptEmEdicao, setPromptEmEdicao] = useState(null);
 
@@ -27,8 +26,14 @@ function ScientistPanel() {
         'openai': 0.00250,
         'deepseek': 0.00010,
         'simulacao': 0.00000,
-        'Desconhecido': 0.00000
+        'Desconhecido': 0.00000,
+        'Medico': 0.00000 // O médico não cobra tokens!
     };
+
+    const getAuthHeaders = () => ({
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+    });
 
     useEffect(() => {
         carregarDadosEstatisticos();
@@ -38,44 +43,13 @@ function ScientistPanel() {
     const carregarDadosEstatisticos = async () => {
         setCarregando(true);
         try {
-            const { data: consultas } = await supabase.from('consultas').select('*');
-            const { data: mensagens } = await supabase.from('mensagens').select('*');
-            
-            let contagemModelos = {};
-            let contagemPrompts = {};
-            let contagemStatus = { pendente: 0, finalizada: 0 };
-            let totalDeImagens = 0;
-            let totalDeIA = 0;
-
-            if (consultas) {
-                consultas.forEach(c => {
-                    const status = c.status || 'pendente';
-                    contagemStatus[status] = (contagemStatus[status] || 0) + 1;
-                });
-            }
-
-            if (mensagens) {
-                mensagens.forEach(msg => {
-                    if (msg.imagem_url) totalDeImagens++;
-                    if (msg.role === 'assistant' && msg.ia_utilizada) {
-                        totalDeIA++;
-                        const modelo = msg.ia_utilizada || 'Desconhecido';
-                        contagemModelos[modelo] = (contagemModelos[modelo] || 0) + 1;
-
-                        const prompt = msg.prompt_utilizado || 'Padrão';
-                        contagemPrompts[prompt] = (contagemPrompts[prompt] || 0) + 1;
-                    }
-                });
-            }
-
-            setEstatisticas({
-                totalConsultas: consultas ? consultas.length : 0,
-                totalMensagensIA: totalDeIA,
-                totalImagens: totalDeImagens,
-                statusConsultas: contagemStatus,
-                modelosIA: contagemModelos,
-                promptsUtilizados: contagemPrompts
+            const resposta = await fetch('http://localhost:3000/api/cientista/estatisticas', {
+                headers: getAuthHeaders()
             });
+            if (resposta.ok) {
+                const data = await resposta.json();
+                setEstatisticas(data);
+            }
         } catch (error) {
             console.error("Erro estatísticas:", error);
         } finally {
@@ -84,72 +58,84 @@ function ScientistPanel() {
     };
 
     const carregarPromptsDoBanco = async () => {
-        const { data } = await supabase
-            .from('engenharia_prompts')
-            .select('*')
-            .order('id', { ascending: false });
-        if (data) setListaPrompts(data);
+        try {
+            const resposta = await fetch('http://localhost:3000/api/cientista/prompts', {
+                headers: getAuthHeaders()
+            });
+            if (resposta.ok) {
+                const data = await resposta.json();
+                setListaPrompts(data);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar prompts:", error);
+        }
     };
 
     const iniciarEdicao = (prompt) => {
         setPromptEmEdicao(prompt);
         setNovoPrompt({
             titulo: prompt.titulo,
-            chave: prompt.chave_identificadora,
-            comando: prompt.comando_base
+            chave: prompt.chave,
+            instrucao: prompt.instrucao
         });
     };
 
     const cancelarEdicao = () => {
         setPromptEmEdicao(null);
-        setNovoPrompt({ titulo: '', chave: '', comando: '' });
+        setNovoPrompt({ titulo: '', chave: '', instrucao: '' });
     };
 
     const salvarOuAtualizarPrompt = async (e) => {
         e.preventDefault();
-        if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.comando.trim()) {
+        if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.instrucao.trim()) {
             alert("Preencha todos os campos do prompt!");
             return;
         }
 
         setSalvandoPrompt(true);
+        const url = promptEmEdicao 
+            ? `http://localhost:3000/api/cientista/prompts/${promptEmEdicao.id}`
+            : 'http://localhost:3000/api/cientista/prompts';
+        
+        const method = promptEmEdicao ? 'PUT' : 'POST';
 
-        if (promptEmEdicao) {
-            const { error } = await supabase
-                .from('engenharia_prompts')
-                .update({ titulo: novoPrompt.titulo, comando_base: novoPrompt.comando })
-                .eq('id', promptEmEdicao.id);
+        try {
+            const resposta = await fetch(url, {
+                method,
+                headers: getAuthHeaders(),
+                body: JSON.stringify(novoPrompt)
+            });
 
-            if (!error) {
-                alert("✅ Prompt atualizado com sucesso!");
+            if (resposta.ok) {
+                alert(`✅ Prompt ${promptEmEdicao ? 'atualizado' : 'cadastrado'} com sucesso!`);
                 cancelarEdicao();
                 carregarPromptsDoBanco();
+            } else {
+                alert("Erro ao salvar. Verifique se a chave já existe.");
             }
-        } else {
-            const { error } = await supabase
-                .from('engenharia_prompts')
-                .insert([{
-                    titulo: novoPrompt.titulo,
-                    chave_identificadora: novoPrompt.chave.toLowerCase().replace(/\s/g, '_'),
-                    comando_base: novoPrompt.comando
-                }]);
-
-            if (!error) {
-                alert("✅ Novo prompt cadastrado com sucesso!");
-                setNovoPrompt({ titulo: '', chave: '', comando: '' });
-                carregarPromptsDoBanco();
-            }
+        } catch (error) {
+            console.error("Erro ao salvar prompt:", error);
         }
+        
         setSalvandoPrompt(false);
     };
 
     const excluirPrompt = async (id) => {
         if (!window.confirm("⚠️ Tem certeza absoluta que deseja excluir este prompt?")) return;
-        const { error } = await supabase.from('engenharia_prompts').delete().eq('id', id);
-        if (!error) {
-            alert("🗑️ Prompt removido com sucesso!");
-            if (promptEmEdicao && promptEmEdicao.id === id) cancelarEdicao();
-            carregarPromptsDoBanco();
+        
+        try {
+            const resposta = await fetch(`http://localhost:3000/api/cientista/prompts/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+
+            if (resposta.ok) {
+                alert("🗑️ Prompt removido com sucesso!");
+                if (promptEmEdicao && promptEmEdicao.id === id) cancelarEdicao();
+                carregarPromptsDoBanco();
+            }
+        } catch (error) {
+            console.error("Erro ao deletar:", error);
         }
     };
 
@@ -167,16 +153,10 @@ function ScientistPanel() {
 
     const custoMedioPorPaciente = estatisticas.totalConsultas > 0 ? (custoTotalEstimado / estatisticas.totalConsultas) : 0;
 
-    // ==========================================
-    // NOVA FUNÇÃO DE LOGOUT SEGURO
-    // ==========================================
-    const fazerLogout = async () => {
-        try {
-            await supabase.auth.signOut(); // Destrói a sessão no Supabase e no navegador
-            window.location.replace('/'); // Redireciona e impede o uso do botão "Voltar"
-        } catch (error) {
-            console.error("Erro ao fazer logout:", error);
-        }
+    const fazerLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        window.location.replace('/'); 
     };
 
     return (
@@ -217,7 +197,6 @@ function ScientistPanel() {
                     </button>
                 </div>
                 <div className="p-4 border-t border-white/10">
-                    {/* BOTÃO DE LOGOUT ATUALIZADO */}
                     <button onClick={fazerLogout} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition">
                         Sair do Portal
                     </button>
@@ -228,7 +207,6 @@ function ScientistPanel() {
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
                 <div className="max-w-6xl mx-auto animate-fade-in">
                     
-                    {/* Cabeçalho partilhado */}
                     <header className="mb-10 flex justify-between items-end">
                         <div>
                             <h1 className="text-3xl font-bold text-white mb-2">
@@ -251,22 +229,21 @@ function ScientistPanel() {
                         <div className="flex justify-center py-20 text-purple-500 animate-pulse">A processar Big Data...</div>
                     ) : (
                         <>
-                            {/* ABA 1: DASHBOARD GERAL - RESTAURADA COMPLETAMENTE */}
+                            {/* ABA 1: DASHBOARD GERAL */}
                             {abaAtiva === 'dashboard' && (
                                 <>
-                                    {/* Caixas de Métricas */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                         <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 flex items-center gap-6 shadow-lg">
                                             <div className="p-4 bg-blue-500/20 rounded-lg text-blue-500 text-3xl">👥</div>
                                             <div>
-                                                <div className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Total de Pacientes</div>
+                                                <div className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Total de Consultas</div>
                                                 <div className="text-3xl font-bold text-white mt-1">{estatisticas.totalConsultas}</div>
                                             </div>
                                         </div>
                                         <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 flex items-center gap-6 shadow-lg">
                                             <div className="p-4 bg-emerald-500/20 rounded-lg text-emerald-500 text-3xl">🧠</div>
                                             <div>
-                                                <div className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Respostas da IA</div>
+                                                <div className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Respostas Totais</div>
                                                 <div className="text-3xl font-bold text-white mt-1">{estatisticas.totalMensagensIA}</div>
                                             </div>
                                         </div>
@@ -279,7 +256,6 @@ function ScientistPanel() {
                                         </div>
                                     </div>
 
-                                    {/* Gráficos de Resolução e Modelos */}
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                                         <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg flex flex-col items-center justify-center">
                                             <h3 className="text-lg font-bold mb-6 text-left w-full border-b border-gray-700 pb-2">Taxa de Resolução Médica</h3>
@@ -294,11 +270,11 @@ function ScientistPanel() {
                                                     <div className="flex gap-4 text-sm w-full justify-center">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                                                            <span className="text-gray-300">Finalizadas ({estatisticas.statusConsultas.finalizada})</span>
+                                                            <span className="text-gray-300">Finalizadas ({estatisticas.statusConsultas.finalizada || 0})</span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                                                            <span className="text-gray-300">Pendentes ({estatisticas.statusConsultas.pendente})</span>
+                                                            <span className="text-gray-300">Pendentes ({estatisticas.statusConsultas.pendente || 0})</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -306,9 +282,9 @@ function ScientistPanel() {
                                         </div>
 
                                         <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg lg:col-span-2">
-                                            <h3 className="text-lg font-bold mb-6 border-b border-gray-700 pb-2">Desempenho: Modelos de IA Utilizados</h3>
+                                            <h3 className="text-lg font-bold mb-6 border-b border-gray-700 pb-2">Desempenho: Agentes Utilizados</h3>
                                             {Object.entries(estatisticas.modelosIA).length === 0 ? (
-                                                <p className="text-gray-500 text-sm">Nenhum dado de IA registado ainda.</p>
+                                                <p className="text-gray-500 text-sm">Nenhum dado registado ainda.</p>
                                             ) : (
                                                 <div className="space-y-6">
                                                     {Object.entries(estatisticas.modelosIA).map(([modelo, quantidade]) => {
@@ -332,10 +308,8 @@ function ScientistPanel() {
                                         </div>
                                     </div>
 
-                                    {/* Gráfico de Prompts */}
                                     <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg">
                                         <h3 className="text-lg font-bold mb-6 border-b border-gray-700 pb-2">Abordagem: Tipos de Prompts Avaliados</h3>
-                                        
                                         {Object.entries(estatisticas.promptsUtilizados).length === 0 ? (
                                             <p className="text-gray-500 text-sm">Nenhum prompt específico registado ainda.</p>
                                         ) : (
@@ -349,10 +323,7 @@ function ScientistPanel() {
                                                                 <span className="text-gray-400">{quantidade} usos</span>
                                                             </div>
                                                             <div className="w-full bg-gray-700 rounded-full h-2">
-                                                                <div 
-                                                                    className="bg-blue-500 h-2 rounded-full transition-all duration-1000" 
-                                                                    style={{ width: `${percentagem}%` }}
-                                                                ></div>
+                                                                <div className="bg-blue-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${percentagem}%` }}></div>
                                                             </div>
                                                         </div>
                                                     );
@@ -372,30 +343,29 @@ function ScientistPanel() {
                                         </h3>
                                         <form onSubmit={salvandoPrompt ? null : salvarOuAtualizarPrompt} className="space-y-4">
                                             <input type="text" placeholder="Título" value={novoPrompt.titulo} onChange={e => setNovoPrompt({...novoPrompt, titulo: e.target.value})} className="w-full bg-[#343541] border border-gray-600 rounded p-2.5 text-white text-sm" />
-                                            <input type="text" placeholder="Chave Única" value={novoPrompt.chave} disabled={!!promptEmEdicao} onChange={e => setNovoPrompt({...novoPrompt, chave: e.target.value})} className="w-full bg-[#343541] border border-gray-600 rounded p-2.5 text-white text-sm font-mono" />
-                                            <textarea placeholder="Comando Base..." value={novoPrompt.comando} onChange={e => setNovoPrompt({...novoPrompt, comando: e.target.value})} className="w-full bg-[#343541] border border-gray-600 rounded p-2.5 text-white text-sm h-44 resize-none" />
+                                            <input type="text" placeholder="Chave Única (ex: padrao, detalhado)" value={novoPrompt.chave} disabled={!!promptEmEdicao} onChange={e => setNovoPrompt({...novoPrompt, chave: e.target.value})} className="w-full bg-[#343541] border border-gray-600 rounded p-2.5 text-white text-sm font-mono" />
+                                            <textarea placeholder="Instrução de Sistema para a IA..." value={novoPrompt.instrucao} onChange={e => setNovoPrompt({...novoPrompt, instrucao: e.target.value})} className="w-full bg-[#343541] border border-gray-600 rounded p-2.5 text-white text-sm h-44 resize-none" />
                                             <div className="flex gap-2">
                                                 {promptEmEdicao && <button type="button" onClick={cancelarEdicao} className="flex-1 py-3 bg-gray-700 rounded text-white font-bold text-sm">Cancelar</button>}
-                                                <button type="submit" className="flex-1 py-3 bg-purple-600 rounded text-white font-bold text-sm">{promptEmEdicao ? 'Atualizar' : 'Salvar'}</button>
+                                                <button type="submit" disabled={salvandoPrompt} className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 transition rounded text-white font-bold text-sm disabled:opacity-50">{promptEmEdicao ? 'Atualizar' : 'Salvar'}</button>
                                             </div>
                                         </form>
                                     </div>
                                     <div className="lg:col-span-2 space-y-4 max-h-[550px] overflow-y-auto custom-scrollbar pr-2">
+                                        {listaPrompts.length === 0 && <p className="text-gray-500">Nenhum prompt cadastrado.</p>}
                                         {listaPrompts.map(p => (
                                             <div key={p.id} className="bg-[#202123] p-5 rounded-xl border border-gray-700 shadow-lg">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
                                                         <h4 className="font-bold text-white mr-3 inline-block">{p.titulo}</h4>
-                                                        <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded font-mono">{p.chave_identificadora}</span>
+                                                        <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded font-mono">{p.chave}</span>
                                                     </div>
                                                     <div className="flex gap-2">
-                                                        <button onClick={() => iniciarEdicao(p)} className="p-1.5 bg-gray-700 hover:bg-blue-600/30 border border-gray-600 text-sm rounded">✏️</button>
-                                                        {p.chave_identificadora !== 'padrao' && (
-                                                            <button onClick={() => excluirPrompt(p.id)} className="p-1.5 bg-gray-700 hover:bg-red-600/30 border border-gray-600 text-sm rounded">🗑️</button>
-                                                        )}
+                                                        <button onClick={() => iniciarEdicao(p)} className="p-1.5 bg-gray-700 hover:bg-blue-600/30 border border-gray-600 text-sm rounded transition">✏️</button>
+                                                        <button onClick={() => excluirPrompt(p.id)} className="p-1.5 bg-gray-700 hover:bg-red-600/30 border border-gray-600 text-sm rounded transition">🗑️</button>
                                                     </div>
                                                 </div>
-                                                <div className="bg-[#343541] p-3 rounded-lg border border-gray-600 text-sm text-gray-300 font-sans whitespace-pre-wrap">{p.comando_base}</div>
+                                                <div className="bg-[#343541] p-3 rounded-lg border border-gray-600 text-sm text-gray-300 font-sans whitespace-pre-wrap">{p.instrucao}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -419,18 +389,18 @@ function ScientistPanel() {
                                         <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg">
                                             <div className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Total de Requisições</div>
                                             <div className="text-4xl font-bold text-white">{estatisticas.totalMensagensIA}</div>
-                                            <p className="text-xs text-gray-500 mt-2">Chamadas processadas com sucesso pelas IAs.</p>
+                                            <p className="text-xs text-gray-500 mt-2">Chamadas processadas pelos agentes de IA e Médicos.</p>
                                         </div>
                                     </div>
 
                                     <div className="bg-[#202123] rounded-xl border border-gray-700 shadow-lg overflow-hidden">
                                         <div className="p-6 border-b border-gray-700">
-                                            <h3 className="text-lg font-bold text-white">Detalhamento de Consumo por IA</h3>
+                                            <h3 className="text-lg font-bold text-white">Detalhamento de Consumo por Agente</h3>
                                         </div>
                                         <table className="w-full text-left text-sm">
                                             <thead className="bg-[#343541] text-gray-400 font-semibold uppercase">
                                                 <tr>
-                                                    <th className="px-6 py-4 border-b border-gray-700">Modelo da IA</th>
+                                                    <th className="px-6 py-4 border-b border-gray-700">Agente / Modelo</th>
                                                     <th className="px-6 py-4 border-b border-gray-700 text-right">Chamadas Executadas</th>
                                                     <th className="px-6 py-4 border-b border-gray-700 text-right">Preço Fixo (aprox.)</th>
                                                     <th className="px-6 py-4 border-b border-gray-700 text-right">Custo Total</th>
@@ -454,7 +424,6 @@ function ScientistPanel() {
                                     </div>
                                 </div>
                             )}
-
                         </>
                     )}
                 </div>
@@ -463,4 +432,4 @@ function ScientistPanel() {
     );
 }
 
-export default ScientistPanel;
+export default ScientistDashboard;

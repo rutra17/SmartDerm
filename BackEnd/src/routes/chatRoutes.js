@@ -1,7 +1,8 @@
 import express from 'express';
 import multer from 'multer';
-import { autenticar } from '../middlewares/authMiddleware.js'; // A SUA função!
-import { criarConsulta, listarConsultas, listarMensagens, enviarMensagem, listarMedicos } from '../controllers/chatController.js';
+import { autenticar } from '../middlewares/authMiddleware.js';
+import { criarConsulta, listarConsultas, listarMensagens, enviarMensagem, listarMedicos, listarPromptsAtivos } from '../controllers/chatController.js';
+
 
 const router = express.Router();
 
@@ -13,6 +14,8 @@ router.use(autenticar);
 router.get('/medicos', listarMedicos);
 router.get('/consultas', listarConsultas);
 router.get('/consultas/:id/mensagens', listarMensagens);
+router.get('/medicos', listarMedicos);
+router.get('/prompts', listarPromptsAtivos);
 router.post('/consultas', criarConsulta);
 router.post('/chat/enviar', upload.single('imagem'), enviarMensagem);
 
