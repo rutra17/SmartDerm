@@ -59,7 +59,7 @@ function DoctorPanel() {
                         if (msg.imagem_url) {
                             imagensEncontradas.push(msg.imagem_url);
                         }
-                        if (msg.role === 'assistant' && msg.texto) {
+                        if (msg.role === 'assistant' && msg.texto && !msg.texto.includes('PARECER MÉDICO DEFINITIVO')) {
                             analiseEncontrada = msg.texto;
                         }
                     });

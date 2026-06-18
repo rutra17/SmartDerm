@@ -53,22 +53,28 @@ export const salvarLaudo = async (req, res) => {
         const { id } = req.params;
         const { laudoMedico } = req.body;
 
+        // 1. Vai buscar o nome real do médico à base de dados
+        const medico = await prisma.medico.findUnique({ 
+            where: { id: req.usuario.id } 
+        });
+        const nomeDoMedico = medico ? medico.nome : "Especialista";
+
         const consultaAtualizada = await prisma.consulta.update({
             where: { id },
             data: {
                 laudoMedico,
-                medicoId: req.usuario.id, // Grava qual médico atendeu
+                medicoId: req.usuario.id,
                 status: 'finalizada'
             }
         });
 
-        // 🌟 NOVIDADE: Envia o laudo automaticamente para o chat do paciente
+        // 2. Cria a mensagem com a assinatura correta e um marcador especial
         await prisma.mensagem.create({
             data: {
                 consultaId: id,
-                role: 'assistant', // Usamos assistant para aparecer do lado esquerdo no chat
-                texto: `🩺 **PARECER MÉDICO DEFINITIVO**\n\n${laudoMedico}\n\n*Assinado por: Dr(a). ${req.usuario.nome}*`,
-                ia_utilizada: 'Médico Humano',
+                role: 'assistant',
+                texto: `🩺 **PARECER MÉDICO DEFINITIVO**\n\n${laudoMedico}\n\n*Assinado por: Dr(a). ${nomeDoMedico}*`,
+                ia_utilizada: 'Medico', // Ajuda a identificar que foi um humano
                 prompt_utilizado: 'Laudo Final'
             }
         });

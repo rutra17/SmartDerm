@@ -63,6 +63,19 @@ model Cientista {
 }
 
 // ==========================================
+// TABELA DO CIENTISTA DE DADOS
+// ==========================================
+model Prompt {
+  id           String   @id @default(uuid())
+  titulo       String   // Ex: "Triagem Severa (Urgências)"
+  chave        String   @unique // Ex: "urgencia" (usado para o Front-End identificar)
+  instrucao    String   // O texto gigante com as regras para o Gemini
+  ativo        Boolean  @default(true) // Permite ligar/desligar um prompt
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+// ==========================================
 // 4. TABELA DE CONSULTAS (Triagem)
 // ==========================================
 model Consulta {
