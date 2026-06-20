@@ -37,20 +37,22 @@ export const listarTudo = async (req, res) => {
 // 3. CRIAÇÃO (CREATE) - Criar utilizadores manualmente
 export const criarUsuario = async (req, res) => {
     const { tipo, username, senha, nome, email, extra } = req.body; 
-    // "extra" pode ser CRM para médicos ou Instituição para cientistas
 
     try {
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);
 
+        // 🌟 CORREÇÃO: Cria um email automático se o formulário não enviar nenhum
+        const emailSeguro = email || `${username}@smartderm.com`;
+
         let novoUsuario;
         if (tipo === 'medico') {
             novoUsuario = await prisma.medico.create({
-                data: { username, senha: senhaHash, nome, email, crm: extra }
+                data: { username, senha: senhaHash, nome, email: emailSeguro, crm: extra }
             });
         } else if (tipo === 'cientista') {
             novoUsuario = await prisma.cientista.create({
-                data: { username, senha: senhaHash, nome, email, instituicao: extra }
+                data: { username, senha: senhaHash, nome, email: emailSeguro, instituicao: extra }
             });
         } else {
             return res.status(400).json({ erro: "Tipo de utilizador inválido." });

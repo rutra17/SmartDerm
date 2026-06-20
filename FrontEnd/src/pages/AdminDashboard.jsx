@@ -23,8 +23,14 @@ function AdminDashboard() {
     });
     const [criando, setCriando] = useState(false);
 
-    // No futuro, usar getAuthHeaders real
-    const headers = { 'Content-Type': 'application/json' };
+    // 🌟 NOVA FUNÇÃO: Pega o Token do localStorage e monta o cabeçalho de autorização
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    };
 
     useEffect(() => {
         carregarTudo();
@@ -33,10 +39,17 @@ function AdminDashboard() {
     const carregarTudo = async () => {
         setCarregando(true);
         try {
-            const resposta = await fetch('http://localhost:3000/api/admin/listar-tudo', { headers });
+            // 🌟 Atualizado para usar o getAuthHeaders()
+            const resposta = await fetch('http://localhost:3000/api/admin/listar-tudo', { 
+                method: 'GET',
+                headers: getAuthHeaders() 
+            });
+            
             if (resposta.ok) {
                 const data = await resposta.json();
                 setDados(data);
+            } else {
+                console.error("Erro na resposta do servidor:", resposta.status);
             }
         } catch (error) {
             console.error("Erro ao carregar dados do admin:", error);
@@ -52,9 +65,10 @@ function AdminDashboard() {
 
         setCriando(true);
         try {
+            // 🌟 Atualizado para usar o getAuthHeaders()
             const resposta = await fetch('http://localhost:3000/api/admin/criar-usuario', {
                 method: 'POST',
-                headers,
+                headers: getAuthHeaders(),
                 body: JSON.stringify(novoUsuario)
             });
 
@@ -78,9 +92,10 @@ function AdminDashboard() {
         }
 
         try {
+            // 🌟 Atualizado para usar o getAuthHeaders()
             const resposta = await fetch(`http://localhost:3000/api/admin/deletar/${tipo}/${id}`, {
                 method: 'DELETE',
-                headers
+                headers: getAuthHeaders()
             });
 
             if (resposta.ok) {
@@ -123,7 +138,7 @@ function AdminDashboard() {
                     
                     <header className="mb-10 flex justify-between items-end border-b border-gray-700 pb-6">
                         <div>
-                            <h1 className="text-4xl font-black text-white mb-2">Controlo Mestre</h1>
+                            <h1 className="text-4xl font-black text-white mb-2">Controle Mestre</h1>
                             <p className="text-gray-400">Gestão global de utilizadores, equipa médica e base de dados.</p>
                         </div>
                         <button onClick={carregarTudo} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded shadow transition flex gap-2 items-center text-sm font-bold">
@@ -140,19 +155,19 @@ function AdminDashboard() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg border-t-4 border-t-blue-500">
                                         <div className="text-gray-400 text-xs font-bold uppercase tracking-wider">Pacientes Registados</div>
-                                        <div className="text-4xl font-black text-white mt-2">{dados.pacientes.length}</div>
+                                        <div className="text-4xl font-black text-white mt-2">{dados.pacientes?.length || 0}</div>
                                     </div>
                                     <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg border-t-4 border-t-emerald-500">
                                         <div className="text-gray-400 text-xs font-bold uppercase tracking-wider">Médicos Ativos</div>
-                                        <div className="text-4xl font-black text-white mt-2">{dados.medicos.length}</div>
+                                        <div className="text-4xl font-black text-white mt-2">{dados.medicos?.length || 0}</div>
                                     </div>
                                     <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg border-t-4 border-t-purple-500">
                                         <div className="text-gray-400 text-xs font-bold uppercase tracking-wider">Cientistas de Dados</div>
-                                        <div className="text-4xl font-black text-white mt-2">{dados.cientistas.length}</div>
+                                        <div className="text-4xl font-black text-white mt-2">{dados.cientistas?.length || 0}</div>
                                     </div>
                                     <div className="bg-[#202123] p-6 rounded-xl border border-gray-700 shadow-lg border-t-4 border-t-orange-500">
                                         <div className="text-gray-400 text-xs font-bold uppercase tracking-wider">Consultas Totais</div>
-                                        <div className="text-4xl font-black text-white mt-2">{dados.consultas.length}</div>
+                                        <div className="text-4xl font-black text-white mt-2">{dados.consultas?.length || 0}</div>
                                     </div>
                                 </div>
                             )}
@@ -172,7 +187,7 @@ function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dados.pacientes.map(p => (
+                                            {dados.pacientes?.map(p => (
                                                 <tr key={p.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
                                                     <td className="px-4 py-3 font-mono text-xs">{p.id.substring(0,8)}</td>
                                                     <td className="px-4 py-3 font-bold text-white">{p.nome}</td>
@@ -191,7 +206,6 @@ function AdminDashboard() {
                             {/* ABA: MÉDICOS (Com formulário de criação) */}
                             {abaAtiva === 'medicos' && (
                                 <div className="space-y-8">
-                                    {/* Formulário Criar Médico */}
                                     <div className="bg-[#202123] p-6 rounded-xl border border-emerald-500/30 shadow-lg">
                                         <h3 className="text-lg font-bold mb-4 text-emerald-400 flex items-center gap-2"><span>➕</span> Registar Novo Médico</h3>
                                         <form onSubmit={handleCriarUsuario} className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -203,7 +217,6 @@ function AdminDashboard() {
                                         </form>
                                     </div>
 
-                                    {/* Tabela de Médicos */}
                                     <div className="bg-[#202123] rounded-xl border border-gray-700 shadow-lg overflow-hidden">
                                         <div className="p-4 bg-gray-800/50 border-b border-gray-700"><h3 className="font-bold text-white">Corpo Clínico</h3></div>
                                         <table className="w-full text-left text-sm text-gray-300">
@@ -216,7 +229,7 @@ function AdminDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {dados.medicos.map(m => (
+                                                {dados.medicos?.map(m => (
                                                     <tr key={m.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
                                                         <td className="px-4 py-3 font-mono font-bold text-emerald-400">{m.crm}</td>
                                                         <td className="px-4 py-3 font-bold text-white">Dr(a). {m.nome}</td>
@@ -235,7 +248,6 @@ function AdminDashboard() {
                             {/* ABA: CIENTISTAS (Com formulário de criação) */}
                             {abaAtiva === 'cientistas' && (
                                 <div className="space-y-8">
-                                    {/* Formulário Criar Cientista */}
                                     <div className="bg-[#202123] p-6 rounded-xl border border-purple-500/30 shadow-lg">
                                         <h3 className="text-lg font-bold mb-4 text-purple-400 flex items-center gap-2"><span>➕</span> Registar Novo Cientista</h3>
                                         <form onSubmit={handleCriarUsuario} className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -247,7 +259,6 @@ function AdminDashboard() {
                                         </form>
                                     </div>
 
-                                    {/* Tabela de Cientistas */}
                                     <div className="bg-[#202123] rounded-xl border border-gray-700 shadow-lg overflow-hidden">
                                         <div className="p-4 bg-gray-800/50 border-b border-gray-700"><h3 className="font-bold text-white">Equipa de Investigação AI</h3></div>
                                         <table className="w-full text-left text-sm text-gray-300">
@@ -260,7 +271,7 @@ function AdminDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {dados.cientistas.map(c => (
+                                                {dados.cientistas?.map(c => (
                                                     <tr key={c.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
                                                         <td className="px-4 py-3 font-mono text-purple-400">{c.instituicao || 'N/A'}</td>
                                                         <td className="px-4 py-3 font-bold text-white">{c.nome}</td>
@@ -291,10 +302,10 @@ function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dados.consultas.map(c => (
+                                            {dados.consultas?.map(c => (
                                                 <tr key={c.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
                                                     <td className="px-4 py-3 font-mono text-xs">{c.id.substring(0,8)}</td>
-                                                    <td className="px-4 py-3 font-bold text-white">{c.nome_paciente}</td>
+                                                    <td className="px-4 py-3 font-bold text-white">{c.nome_paciente || (c.paciente && c.paciente.nome) || 'Desconhecido'}</td>
                                                     <td className="px-4 py-3 text-gray-400">{c.medico ? `Dr. ${c.medico.nome}` : 'Nenhum'}</td>
                                                     <td className="px-4 py-3">
                                                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${c.status === 'finalizada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-500/20 text-orange-400'}`}>
@@ -302,7 +313,7 @@ function AdminDashboard() {
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3 text-right">
-                                                        <button onClick={() => handleDeletar('consulta', c.id, `Consulta de ${c.nome_paciente}`)} className="px-3 py-1 bg-red-900/30 hover:bg-red-600 text-red-500 hover:text-white rounded transition text-xs font-bold">Forçar Apagar</button>
+                                                        <button onClick={() => handleDeletar('consulta', c.id, `Consulta ID: ${c.id.substring(0,8)}`)} className="px-3 py-1 bg-red-900/30 hover:bg-red-600 text-red-500 hover:text-white rounded transition text-xs font-bold">Forçar Apagar</button>
                                                     </td>
                                                 </tr>
                                             ))}
