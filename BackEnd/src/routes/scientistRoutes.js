@@ -4,14 +4,12 @@ import { verificarCientista, listarPrompts, criarPrompt, atualizarPrompt, deleta
 
 const router = express.Router();
 
-router.use(autenticar);
-router.use(verificarCientista);
 
-router.get('/cientista/estatisticas', obterEstatisticas);
-router.get('/cientista/prompts', listarPrompts);
-router.get('/cientista/auditoria', obterConsultasAuditoria);
-router.post('/cientista/prompts', criarPrompt);
-router.put('/cientista/prompts/:id', atualizarPrompt);
-router.delete('/cientista/prompts/:id', deletarPrompt);
+router.get('/cientista/estatisticas', autenticar, verificarCientista, obterEstatisticas);
+router.get('/cientista/prompts', autenticar, verificarCientista, listarPrompts);
+router.get('/cientista/auditoria', autenticar, verificarCientista, obterConsultasAuditoria);
+router.post('/cientista/prompts', autenticar, verificarCientista, criarPrompt);
+router.put('/cientista/prompts/:id', autenticar, verificarCientista, atualizarPrompt);
+router.delete('/cientista/prompts/:id', autenticar, verificarCientista, deletarPrompt);
 
 export default router;
