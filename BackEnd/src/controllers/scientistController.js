@@ -101,3 +101,53 @@ export const obterEstatisticas = async (req, res) => {
         res.status(500).json({ erro: "Erro ao buscar estatísticas." });
     }
 };
+export const obterConsultasAuditoria = async (req, res) => {
+    try {
+        const consultas = await prisma.consulta.findMany({
+            include: {
+                mensagens: {
+                    orderBy: { criadoEm: 'asc' }
+                },
+                medico: {
+                    select: { nome: true, crm: true }
+                }
+            },
+            orderBy: { criadoEm: 'desc' }
+        });
+
+        // Formata os dados para o Cientista conseguir ler com facilidade
+        const consultasFormatadas = consultas.map(c => {
+            let imagens = [];
+            let analisesIA = [];
+
+            c.mensagens.forEach(msg => {
+                if (msg.imagem_url) imagens.push(msg.imagem_url);
+                
+                if (msg.role === 'assistant' && msg.texto && !msg.texto.includes('PARECER MÉDICO DEFINITIVO')) {
+                    analisesIA.push({
+                        prompt: msg.prompt_utilizado || 'Padrão',
+                        modelo: msg.ia_utilizada || 'Gemini',
+                        latencia: msg.latenciaMs ? `${(msg.latenciaMs / 1000).toFixed(2)}s` : 'N/D',
+                        texto: msg.texto
+                    });
+                }
+            });
+
+            return {
+                id: c.id,
+                nomePaciente: c.nome_paciente,
+                status: c.status,
+                criadoEm: c.criadoEm,
+                medicoHumano: c.medico ? `Dr(a). ${c.medico.nome} (CRM: ${c.medico.crm})` : 'Não assumido',
+                laudoMedico: c.laudoMedico || 'Ainda não emitido',
+                imagens,
+                analisesIA
+            };
+        });
+
+        res.json(consultasFormatadas);
+    } catch (error) {
+        console.error("Erro na auditoria:", error);
+        res.status(500).json({ erro: "Erro ao buscar dados de auditoria." });
+    }
+};

@@ -6,7 +6,6 @@ import Sidebar from '../components/Sidebar';
 import ChatHeader from '../components/ChatHeader';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
-import SkeletonLoader from '../components/SkeletonLoader';
 
 function PatientChat() {
     const navigate = useNavigate();
@@ -57,7 +56,7 @@ function PatientChat() {
         }
         
         carregarHistorico();
-        carregarMedicos(); // Carrega a lista de médicos ao abrir a página
+        carregarMedicos(); 
     }, []);
 
     useEffect(() => {
@@ -130,7 +129,6 @@ function PatientChat() {
         setMessages([]); 
         setLoading(true); 
 
-        // Encontra o status da consulta clicada para saber se bloqueia o envio de novas mensagens
         const consultaAtual = history.find(c => c.id === id);
         if (consultaAtual) setStatusConsulta(consultaAtual.status);
 
@@ -218,7 +216,7 @@ function PatientChat() {
     return (
         <div className="flex h-screen w-full text-gray-100 font-sans relative">
             
-            {/* MODAL DE NOVA CONSULTA COM SELEÇÃO DE MÉDICO */}
+            {/* MODAL DE NOVA CONSULTA */}
             {isModalOpen && (
                 <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
                     <div className="bg-[#202123] p-6 rounded-lg shadow-xl w-full max-w-md border border-gray-700 animate-fade-in">
@@ -304,7 +302,28 @@ function PatientChat() {
                             {messages.map(m => (
                                 <ChatMessage key={m.id} message={m} />
                             ))}
-                            {loading && <SkeletonLoader />}
+                            
+                            {/* 🌟 O PASSO 1 FOI COLOCADO EXATAMENTE AQUI! 🌟 */}
+                            {loading && (
+                                <div className="flex justify-start animate-fade-in py-4 px-4 sm:px-6 md:px-8">
+                                    <div className="flex gap-4 p-4 rounded-xl max-w-3xl bg-[#202123] border border-gray-700 shadow-sm opacity-80">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xl bg-purple-500/20 text-purple-400">
+                                            🤖
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <span className="font-semibold text-purple-400 text-sm">SmartDerm IA</span>
+                                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                                <div className="flex gap-1">
+                                                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                                </div>
+                                                <span>A analisar sintomas e imagem. Por favor, aguarde...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

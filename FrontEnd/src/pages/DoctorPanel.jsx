@@ -5,7 +5,10 @@ import '../components/ChatMarkdown.css';
 function DoctorPanel() {
     const [filaConsultas, setFilaConsultas] = useState([]);
     const [consultaSelecionada, setConsultaSelecionada] = useState(null);
-    const [dadosTriagem, setDadosTriagem] = useState({ imagens: [], analiseIA: '' });
+    
+    // 🌟 MUDANÇA 1: O estado inicial agora tem "analisesIA: []" (um array vazio) em vez de uma string
+    const [dadosTriagem, setDadosTriagem] = useState({ imagens: [], analisesIA: [] });
+    
     const [laudoFinal, setLaudoFinal] = useState('');
     const [carregando, setCarregando] = useState(false);
 
@@ -39,7 +42,6 @@ function DoctorPanel() {
         setCarregando(true);
         setConsultaSelecionada(consulta);
         
-        // No Prisma, o campo chama-se laudoMedico (camelCase)
         setLaudoFinal(consulta.laudoMedico || ''); 
 
         try {
@@ -51,23 +53,27 @@ function DoctorPanel() {
                 const data = await resposta.json();
                 
                 let imagensEncontradas = [];
-                let analiseEncontrada = 'Nenhuma análise de IA encontrada para esta triagem.';
+                let analisesEncontradas = []; 
 
-                // O nosso back-end já devolve as mensagens organizadas junto com a consulta!
                 if (data.mensagens) {
                     data.mensagens.forEach(msg => {
                         if (msg.imagem_url) {
                             imagensEncontradas.push(msg.imagem_url);
                         }
+                        
+                        // Guarda todas as respostas da IA que não sejam o laudo do médico
                         if (msg.role === 'assistant' && msg.texto && !msg.texto.includes('PARECER MÉDICO DEFINITIVO')) {
-                            analiseEncontrada = msg.texto;
+                            analisesEncontradas.push({
+                                prompt: msg.prompt_utilizado || 'Padrão',
+                                texto: msg.texto
+                            });
                         }
                     });
                 }
 
                 setDadosTriagem({
                     imagens: imagensEncontradas,
-                    analiseIA: analiseEncontrada
+                    analisesIA: analisesEncontradas // Guardamos a lista completa no estado
                 });
             }
         } catch (error) {
@@ -142,7 +148,6 @@ function DoctorPanel() {
                             >
                                 <div className="font-semibold">{consulta.nome_paciente}</div>
                                 <div className="text-xs text-gray-400 mt-1 flex justify-between items-center">
-                                    {/* Mostramos parte do ID para não quebrar o layout */}
                                     <span>ID: {consulta.id.substring(0,8)}...</span> 
                                     {consulta.status === 'finalizada' ? (
                                         <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold">
@@ -220,15 +225,32 @@ function DoctorPanel() {
                                 )}
                             </div>
 
-                            {/* Coluna da Análise IA */}
+                            {/* 🌟 MUDANÇA 2: Coluna da Análise IA totalmente atualizada para mostrar múltiplos laudos */}
                             <div className="bg-[#202123] rounded-xl border border-gray-600 p-4 flex flex-col">
                                 <h3 className="text-lg font-semibold text-emerald-500 mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
-                                    <span>🧠</span> Pré-Laudo da IA
+                                    <span>🧠</span> Histórico de Pré-Laudos da IA
                                 </h3>
-                                <div className="flex-1 bg-[#343541] p-4 rounded-lg text-sm text-gray-300 overflow-y-auto max-h-[400px] markdown-formatado">
-                                    <ReactMarkdown>
-                                        {dadosTriagem.analiseIA}
-                                    </ReactMarkdown>
+                                <div className="flex-1 bg-[#343541] p-4 rounded-lg text-sm text-gray-300 overflow-y-auto max-h-[400px] custom-scrollbar space-y-6">
+                                    
+                                    {/* Faz um map em todas as análises encontradas */}
+                                    {dadosTriagem.analisesIA && dadosTriagem.analisesIA.length > 0 ? (
+                                        dadosTriagem.analisesIA.map((analise, index) => (
+                                            <div key={index} className="border border-gray-600 rounded-lg p-3 bg-[#2a2b32] shadow-sm">
+                                                <div className="text-xs font-bold text-purple-400 mb-2 uppercase tracking-wider border-b border-gray-600 pb-1 flex justify-between">
+                                                    <span>Prompt Utilizado: {analise.prompt}</span>
+                                                    <span className="text-gray-500">#{index + 1}</span>
+                                                </div>
+                                                <div className="markdown-formatado">
+                                                    <ReactMarkdown>
+                                                        {analise.texto}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-500 italic text-center py-10">Nenhuma análise de IA encontrada para esta triagem.</p>
+                                    )}
+
                                 </div>
                             </div>
 

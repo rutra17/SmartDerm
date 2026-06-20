@@ -104,8 +104,20 @@ model Mensagem {
   imagem_url       String?  // Nome/URL da imagem guardada no MinIO
   ia_utilizada     String?  // "gemini", "simulacao", etc.
   prompt_utilizado String?  // "padrao", "severo", etc.
+  latenciaMs       Int?     // Tempo de resposta em milissegundos
   criadoEm         DateTime @default(now())
 
   // Cascade: Se a consulta for deletada, as mensagens também serão
   consulta         Consulta @relation(fields: [consultaId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 6. TABELA DE ADMINISTRADORES (Super-Usuários)
+// ==========================================
+model Admin {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  senha     String
+  nome      String
+  criadoEm  DateTime @default(now())
 }

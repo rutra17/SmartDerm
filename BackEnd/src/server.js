@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
 import scientistRoutes from './routes/scientistRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', chatRoutes);
 app.use('/api', doctorRoutes);
 app.use('/api', scientistRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 app.listen(PORT, '0.0.0.0', () => {
