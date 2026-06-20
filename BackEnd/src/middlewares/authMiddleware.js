@@ -34,17 +34,16 @@ export const autenticar = (req, res, next) => {
 // Usado APENAS pelas rotas de administração.
 // ========================================================
 export const verificarAdmin = (req, res, next) => {
-    console.log("🚨 [DEBUG] Alguém está a tentar aceder ao Painel Admin!");
-    console.log("🚨 [DEBUG] O crachá (Token) diz que ele é:", req.usuario);
+    console.log("[DEBUG] Alguém está a tentar aceder ao Painel Admin!");
+    console.log("[DEBUG] O crachá (Token) diz que ele é:", req.usuario);
 
     if (req.usuario && req.usuario.tipo === 'admin') {
-        console.log("✅ [DEBUG] Tudo certo, ele é o Admin. Portas abertas!");
+        console.log("[DEBUG] Tudo certo, ele é o Admin. Portas abertas!");
         next(); 
     } else {
         const tipoAtual = req.usuario ? req.usuario.tipo : 'Desconhecido';
-        console.log(`❌ [DEBUG] Bloqueado! Ele tentou entrar com cargo de: ${tipoAtual}`);
+        console.log(`[DEBUG] Bloqueado! Ele tentou entrar com cargo de: ${tipoAtual}`);
         
-        // Vamos enviar o erro diretamente para a tela do seu navegador!
         return res.status(403).json({ 
             erro: `Acesso bloqueado! O sistema pensa que você é um(a) '${tipoAtual}' em vez de 'admin'.` 
         });

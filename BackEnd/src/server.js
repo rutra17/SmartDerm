@@ -42,7 +42,7 @@ app.use(express.json());
 
 // Rota de Teste (Health Check)
 app.get('/', (req, res) => {
-    res.json({ status: 'online', message: 'Servidor do SmartDem AI rodando com sucesso! 🚀' });
+    res.json({ status: 'online', message: 'Servidor do SmartDem AI rodando com sucesso!' });
 });
 
 app.use('/api', imageRoutes);

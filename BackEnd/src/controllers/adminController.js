@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-// 1. ESTATÍSTICAS GERAIS (Para o topo do painel Admin)
 export const obterResumoGeral = async (req, res) => {
     try {
         const totalPacientes = await prisma.paciente.count();
@@ -42,7 +41,7 @@ export const criarUsuario = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);
 
-        // 🌟 CORREÇÃO: Cria um email automático se o formulário não enviar nenhum
+        // Cria um email automático se o formulário não enviar nenhum
         const emailSeguro = email || `${username}@smartderm.com`;
 
         let novoUsuario;

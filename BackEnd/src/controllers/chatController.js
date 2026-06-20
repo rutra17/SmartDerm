@@ -145,23 +145,21 @@ export const enviarMensagem = async (req, res) => {
         // 4. CHAMADA AO GOOGLE GEMINI
         // ---------------------------------------------------------
         let textoIA = "";
-        let tempoDeProcessamento = 0; // 🌟 Variável do cronómetro
+        let tempoDeProcessamento = 0;
         try {
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             
-            // ⏱️ Inicia o relógio
             const tempoInicio = Date.now();
             
             const result = await model.generateContent(conteudoParaIA);
             textoIA = result.response.text();
             
-            // ⏱️ Para o relógio e calcula a diferença
             const tempoFim = Date.now();
             tempoDeProcessamento = tempoFim - tempoInicio;
 
         } catch (iaError) {
             console.error("Erro na API do Gemini:", iaError);
-            textoIA = "⚠️ Erro: Falha ao gerar o laudo com a IA. A imagem e o seu relato foram guardados em segurança para análise médica humana.";
+            textoIA = "Erro: Falha ao gerar o laudo com a IA. A imagem e o seu relato foram guardados em segurança para análise médica humana.";
         }
         // Grava a resposta da IA no banco, AGORA COM A LATÊNCIA
         const iaMensagem = await prisma.mensagem.create({
@@ -171,7 +169,7 @@ export const enviarMensagem = async (req, res) => {
                 texto: textoIA,
                 ia_utilizada: ia_utilizada || 'gemini',
                 prompt_utilizado: prompt_utilizado || 'padrao',
-                latenciaMs: tempoDeProcessamento > 0 ? tempoDeProcessamento : null // 🌟 Guarda o tempo no banco
+                latenciaMs: tempoDeProcessamento > 0 ? tempoDeProcessamento : null
             }
         });
 
