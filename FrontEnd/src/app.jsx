@@ -7,13 +7,11 @@ import PatientChat from './pages/PatientChat';
 import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Importação do Componente de Segurança
 import ProtectedRoute from './components/ProtectedRoute'; 
 
-// ========================================================
-// COMPONENTE DE LOGIN (Livre do Supabase, usando a nossa API)
-// ========================================================
 function HomeGateway() {
     const navigate = useNavigate();
     const [loginType, setLoginType] = useState(null); 
@@ -83,6 +81,10 @@ function HomeGateway() {
         else if (loginType === 'cientista') {
             usernameFinal = identificador.toLowerCase().replace(/\s/g, '_');
         }
+        // 🌟 NOVA REGRA PARA O ADMIN
+        else if (loginType === 'admin') {
+            usernameFinal = identificador; 
+        }
 
         try {
             // Chamada à nossa API!
@@ -110,6 +112,7 @@ function HomeGateway() {
             if (dados.usuario.tipo === 'paciente') navigate('/paciente');
             else if (dados.usuario.tipo === 'medico') navigate('/medico');
             else if (dados.usuario.tipo === 'cientista') navigate('/cientista');
+            else if (dados.usuario.tipo === 'admin') navigate('/admin'); // 🌟 REDIRECIONAMENTO DO ADMIN
 
         } catch (error) {
             console.error("Erro na comunicação:", error);
@@ -161,33 +164,62 @@ function HomeGateway() {
     );
 
     return (
-        <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center text-white p-4">
+        <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center text-white p-4 relative">
             <h1 className="text-4xl font-bold text-emerald-500 mb-2">SmartDerm AI</h1>
             <p className="text-gray-400 mb-10 text-center">Acesso restrito. Autentique-se para continuar.</p>
             
             {!loginType && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
-                    <button onClick={() => setLoginType('paciente')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-emerald-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
-                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">👤</span>
-                        <h2 className="text-xl font-bold mb-2">Sou Paciente</h2>
-                        <p className="text-sm text-gray-400">Acessar via CPF</p>
-                    </button>
-                    <button onClick={() => setLoginType('medico')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-blue-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
-                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">🩺</span>
-                        <h2 className="text-xl font-bold mb-2">Sou Médico</h2>
-                        <p className="text-sm text-gray-400">Acessar via CRN/CRM</p>
-                    </button>
-                    <button onClick={() => setLoginType('cientista')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-purple-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
-                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</span>
-                        <h2 className="text-xl font-bold mb-2">Cientista de Dados</h2>
-                        <p className="text-sm text-gray-400">Acesso Administrativo</p>
-                    </button>
-                </div>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                        <button onClick={() => setLoginType('paciente')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-emerald-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                            <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">👤</span>
+                            <h2 className="text-xl font-bold mb-2">Sou Paciente</h2>
+                            <p className="text-sm text-gray-400">Acessar via CPF</p>
+                        </button>
+                        <button onClick={() => setLoginType('medico')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-blue-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                            <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">🩺</span>
+                            <h2 className="text-xl font-bold mb-2">Sou Médico</h2>
+                            <p className="text-sm text-gray-400">Acessar via CRN/CRM</p>
+                        </button>
+                        <button onClick={() => setLoginType('cientista')} className="bg-[#343541] p-8 rounded-xl border border-gray-600 hover:border-purple-500 hover:shadow-lg transition flex flex-col items-center text-center group cursor-pointer">
+                            <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</span>
+                            <h2 className="text-xl font-bold mb-2">Cientista de Dados</h2>
+                            <p className="text-sm text-gray-400">Acesso Administrativo</p>
+                        </button>
+                    </div>
+
+                    {/* 🌟 BOTÃO SECRETO DO ADMINISTRADOR (FIXADO NO CANTO INFERIOR DIREITO) */}
+                    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+                        <button 
+                            type="button"
+                            onClick={() => { setLoginType('admin'); setIdentificador(''); setSenha(''); setErro(''); }}
+                            style={{
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '8px',
+                                padding: '12px 20px', 
+                                backgroundColor: '#cc0000', 
+                                border: '2px solid #ffcccc', 
+                                borderRadius: '8px',
+                                color: 'white', 
+                                fontSize: '14px', 
+                                fontWeight: 'bold',
+                                cursor: 'pointer', 
+                                textTransform: 'uppercase',
+                                boxShadow: '0 10px 15px rgba(0,0,0,0.3)'
+                            }}
+                        >
+                            <span>👑</span> SysAdmin
+                        </button>
+                    </div>
+                </>
             )}
 
             {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
             {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
             {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: bruno_admin")}
+            {/* 🌟 FORMULÁRIO DE LOGIN ESCONDIDO DO ADMINISTRADOR */}
+            {loginType === 'admin' && renderLoginForm("Acesso Supremo (SysAdmin)", "Nome de Usuário", "Ex: admin")}
         </div>
     );
 }
@@ -201,22 +233,24 @@ function App() {
             <Routes>
                 <Route path="/" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} /> 
-                
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>
                         <PatientChat />
                     </ProtectedRoute>
                 } />
-                
                 <Route path="/medico" element={
                     <ProtectedRoute allowedRoles={['medico']}>
                         <DoctorPanel />
                     </ProtectedRoute>
                 } />
-                
                 <Route path="/cientista" element={
                     <ProtectedRoute allowedRoles={['cientista']}>
                         <ScientistDashboard />
+                    </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminDashboard />
                     </ProtectedRoute>
                 } />
             </Routes>

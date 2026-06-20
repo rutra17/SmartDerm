@@ -7,8 +7,32 @@ import chatRoutes from './routes/chatRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
 import scientistRoutes from './routes/scientistRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
+
+const prismaClientAdmin = new PrismaClient();
+
+async function injetarAdminMestre() {
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const senhaHash = await bcrypt.hash("admin123", salt);
+        
+        await prismaClientAdmin.admin.create({
+            data: {
+                username: "admin123",
+                senha: senhaHash,
+                nome: "Administrador"
+            }
+        });
+        console.log("[DATABASE] Admin mestre garantido com sucesso no PostgreSQL!");
+    } catch (error) {
+        // Se der erro porque já existe, apenas ignoramos em silêncio
+        console.log("[DATABASE] Verificação de Admin concluída (Pronto para Login).");
+    }
+}
+injetarAdminMestre();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

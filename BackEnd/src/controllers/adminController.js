@@ -85,3 +85,20 @@ export const deletarEntidade = async (req, res) => {
         res.status(500).json({ erro: `Erro ao apagar ${tipo}. Podem existir dados dependentes.` });
     }
 };
+export const criarAdminMaster = async (req, res) => {
+    const { username, senha, nome } = req.body;
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const senhaHash = await bcrypt.hash(senha, salt);
+
+        const novoAdmin = await prisma.admin.create({
+            data: { username, senha: senhaHash, nome }
+        });
+
+        res.status(201).json({ sucesso: true, mensagem: "Super Admin criado!", admin: novoAdmin });
+    } catch (error) {
+        console.error("Erro ao criar Admin:", error);
+        res.status(500).json({ erro: "Erro ao criar Admin. O username já existe?" });
+    }
+};

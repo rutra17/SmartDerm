@@ -7,13 +7,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'ARTORIA';
 
 export const registrar = async (req, res) => {
     try {
-        // AQUI ESTAVA O ERRO! Agora extraímos TODOS os campos que o Front-End envia.
         const { username, senha, nome, email, tipo, dadoEspecifico, genero, cep, endereco, referencia } = req.body;
 
-        // Verifica se o usuário já existe
         const usuarioExistente = await prisma.paciente.findUnique({ where: { username } }) ||
                                  await prisma.medico.findUnique({ where: { username } }) ||
-                                 await prisma.cientista.findUnique({ where: { username } });
+                                 await prisma.cientista.findUnique({ where: { username } }) ||
+                                 await prisma.admin.findUnique({ where: { username } });
 
         if (usuarioExistente) {
             return res.status(400).json({ erro: "Este utilizador já está registado." });
@@ -29,43 +28,19 @@ export const registrar = async (req, res) => {
         if (tipo === 'paciente') {
             novoUsuario = await prisma.paciente.create({
                 data: {
-                    username,
-                    senha: senhaHash,
-                    nome,
-                    email,
-                    cpf: dadoEspecifico,
-                    genero,
-                    cep,
-                    endereco,
-                    referencia
+                    username, senha: senhaHash, nome, email, cpf: dadoEspecifico, genero, cep, endereco, referencia
                 }
             });
         } else if (tipo === 'medico') {
             novoUsuario = await prisma.medico.create({
                 data: {
-                    username,
-                    senha: senhaHash,
-                    nome,
-                    email,
-                    crm: dadoEspecifico,
-                    genero,
-                    cep,
-                    endereco,
-                    referencia
+                    username, senha: senhaHash, nome, email, crm: dadoEspecifico, genero, cep, endereco, referencia
                 }
             });
         } else if (tipo === 'cientista') {
             novoUsuario = await prisma.cientista.create({
                 data: {
-                    username,
-                    senha: senhaHash,
-                    nome,
-                    email,
-                    instituicao: dadoEspecifico,
-                    genero,
-                    cep,
-                    endereco,
-                    referencia
+                    username, senha: senhaHash, nome, email, instituicao: dadoEspecifico, genero, cep, endereco, referencia
                 }
             });
         } else {
@@ -102,6 +77,12 @@ export const login = async (req, res) => {
             tipo = 'cientista';
         }
 
+        if (!usuario) {
+            usuario = await prisma.admin.findUnique({ where: { username } });
+            tipo = 'admin';
+        }
+
+        // SÓ DEPOIS de procurar nos 4 é que damos erro se não encontrar ninguém
         if (!usuario) {
             return res.status(404).json({ erro: "Utilizador não encontrado." });
         }
