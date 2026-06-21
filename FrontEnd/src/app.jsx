@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
 
 // Importação das suas páginas
+import Home from './pages/Home';
 import PatientChat from './pages/PatientChat';
 import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
@@ -230,8 +231,10 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<HomeGateway />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} /> 
+                
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>
                         <PatientChat />
