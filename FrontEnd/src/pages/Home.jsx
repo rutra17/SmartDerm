@@ -72,7 +72,7 @@ function Home() {
                 className="flex-grow flex items-center py-20"
                 tabIndex={-1}
             >
-                <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+                <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-start">
 
                     {/* Texto */}
                     <div>
@@ -139,7 +139,7 @@ function Home() {
 
                     {/* Card demonstrativo animado */}
                     <div className="flex justify-center">
-                        <div className="relative w-full max-w-md bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden">
+                        <div className="relative w-full max-w-md bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden transition-all duration-700 ease-in-out">
 
                             <div className="absolute inset-0 bg-gradient-to-br from-smart-mint/5 via-transparent to-transparent pointer-events-none" />
 
@@ -221,14 +221,19 @@ function Home() {
                                 </div>
 
                                 {step >= 5 && (
-                                    <div className="rounded-xl border border-smart-mint/20 bg-smart-mint/10 p-3 animate-pulse">
+                                    <div className={`rounded-xl border border-smart-mint/20 bg-smart-mint/10 p-3 ${step === 5 ? 'animate-pulse' : ''}`}>
                                         <p className="text-sm text-smart-mint">
                                             ✓ Pré-relatório gerado pela IA
                                         </p>
                                     </div>
                                 )}
 
-                                {step >= 6 && (
+                                <div
+                                    className={`overflow-hidden transition-all duration-700 ease-in-out ${step >= 6
+                                        ? 'max-h-[320px] opacity-100 translate-y-0 mt-3'
+                                        : 'max-h-0 opacity-0 -translate-y-2 mt-0'
+                                        }`}
+                                >
                                     <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
                                         <p className="font-semibold text-green-300 mb-3">
                                             Laudo Médico
@@ -236,13 +241,13 @@ function Home() {
 
                                         <div className="text-sm text-gray-300 space-y-2">
                                             <p>
-                                                <strong>Parecer:</strong> Lesão pigmentada apresentando
-                                                assimetria discreta, bordas irregulares e variação de coloração.
+                                                <strong>Parecer:</strong> Lesão pigmentada apresentando assimetria
+                                                discreta, bordas irregulares e variação de coloração.
                                             </p>
 
                                             <p>
-                                                <strong>Conclusão:</strong> Achados compatíveis com lesão
-                                                melanocítica que requer acompanhamento clínico.
+                                                <strong>Conclusão:</strong> Achados compatíveis com lesão melanocítica
+                                                que requer acompanhamento clínico.
                                             </p>
 
                                             <p>
@@ -250,7 +255,8 @@ function Home() {
                                             </p>
                                         </div>
                                     </div>
-                                )}                             </div>
+                                </div>
+                            </div>
 
                             <div className="mt-8">
                                 <div className="flex justify-between text-sm mb-2">
