@@ -1,30 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from '../assests/img/Smartderm.jfif';
+import logo from '../assets/img/Logo_WH.png';
 
 function Home() {
     const [step, setStep] = useState(0);
-
+{/* UseEffect melhorado */}
     useEffect(() => {
-        const timeouts = [];
+        let stepValue = 0;
 
-        const runAnimation = () => {
-            setStep(0);
+        const interval = setInterval(() => {
+            stepValue += 1;
+            setStep(stepValue);
 
-            timeouts.push(setTimeout(() => setStep(1), 800));
-            timeouts.push(setTimeout(() => setStep(2), 1600));
-            timeouts.push(setTimeout(() => setStep(3), 2400));
-            timeouts.push(setTimeout(() => setStep(4), 3200));
-            timeouts.push(setTimeout(() => setStep(5), 4200));
-            timeouts.push(setTimeout(() => setStep(6), 5500));
-        };
+            if(stepValue >= 6){
+                clearInterval(interval);
+            }
+        }, 800);
 
-        runAnimation();
-
-        return () => {
-            timeouts.forEach(t => clearTimeout(t));
-        };
+        return() => clearInterval(interval);
     }, []);
+
     return (
         <main
             className="min-h-screen bg-smart-blue text-white flex flex-col"
@@ -44,9 +39,9 @@ function Home() {
                         <img
                             src={logo}
                             alt="Logo SmartDerm AI"
-                            className="h-12 w-12 rounded-lg object-cover"
+                            className="h-16 w-30"
                         />
-
+                    {/* Ocultado devido a destaque na logo nova}
                         <div>
                             <h1 className="font-bold text-lg">
                                 SmartDerm AI
@@ -55,8 +50,8 @@ function Home() {
                                 Triagem dermatológica inteligente
                             </p>
                         </div>
+                    */}
                     </div>
-
                     <Link
                         to="/login"
                         className="bg-smart-teal hover:brightness-110 transition px-5 py-2.5 rounded-lg font-semibold"
@@ -109,7 +104,7 @@ function Home() {
                                 href="#como-funciona"
                                 className="border border-white/20 hover:border-smart-mint hover:text-smart-mint transition px-7 py-3 rounded-lg"
                             >
-                                Como funciona
+                                Como funciona?
                             </a>
                         </div>
 
@@ -308,7 +303,7 @@ function Home() {
             >
                 <div className="max-w-7xl mx-auto px-6">
                     <h2 className="text-4xl font-bold text-center mb-4">
-                        Como funciona
+                        Como funciona?
                     </h2>
 
                     <p className="text-center text-gray-300 max-w-2xl mx-auto mb-16">
