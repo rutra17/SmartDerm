@@ -13,7 +13,7 @@ const Login = () => {
 
         try {
             // Chama o nosso Back-End recém-construído!
-            const resposta = await fetch('http://localhost:3000/api/auth/login', {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

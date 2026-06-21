@@ -71,7 +71,7 @@ function PatientChat() {
 
     const carregarHistorico = async () => {
         try {
-            const resposta = await fetch('http://localhost:3000/api/consultas', { headers: getAuthHeaders() });
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/consultas', { headers: getAuthHeaders() });
             if (resposta.ok) {
                 const data = await resposta.json();
                 setHistory(data.reverse());
@@ -83,7 +83,7 @@ function PatientChat() {
 
     const carregarMedicos = async () => {
         try {
-            const resposta = await fetch('http://localhost:3000/api/medicos', { headers: getAuthHeaders() });
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/medicos', { headers: getAuthHeaders() });
             if (resposta.ok) {
                 const data = await resposta.json();
                 setListaMedicos(data);
@@ -99,7 +99,7 @@ function PatientChat() {
 
         setLoading(true);
         try {
-            const resposta = await fetch('http://localhost:3000/api/consultas', {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/consultas', {
                 method: 'POST',
                 headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -133,7 +133,7 @@ function PatientChat() {
         if (consultaAtual) setStatusConsulta(consultaAtual.status);
 
         try {
-            const resposta = await fetch(`http://localhost:3000/api/consultas/${id}/mensagens`, { headers: getAuthHeaders() });
+            const resposta = await fetch(`https://api.smartderm.37.27.81.229.sslip.io/api/consultas/${id}/mensagens`, { headers: getAuthHeaders() });
 
             if (resposta.ok) {
                 const data = await resposta.json();

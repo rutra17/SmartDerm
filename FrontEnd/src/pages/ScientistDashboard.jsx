@@ -49,7 +49,7 @@ function ScientistDashboard() {
     const carregarDadosEstatisticos = async () => {
         setCarregando(true);
         try {
-            const resposta = await fetch('http://localhost:3000/api/cientista/estatisticas', { headers: getAuthHeaders() });
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/cientista/estatisticas', { headers: getAuthHeaders() });
             if (resposta.ok) setEstatisticas(await resposta.json());
         } catch (error) { console.error("Erro estatísticas:", error); }
         setCarregando(false);
@@ -57,14 +57,14 @@ function ScientistDashboard() {
 
     const carregarPromptsDoBanco = async () => {
         try {
-            const resposta = await fetch('http://localhost:3000/api/cientista/prompts', { headers: getAuthHeaders() });
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts', { headers: getAuthHeaders() });
             if (resposta.ok) setListaPrompts(await resposta.json());
         } catch (error) { console.error("Erro prompts:", error); }
     };
 
     const carregarDadosAuditoria = async () => {
         try {
-            const resposta = await fetch('http://localhost:3000/api/cientista/auditoria', { headers: getAuthHeaders() });
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/cientista/auditoria', { headers: getAuthHeaders() });
             if (resposta.ok) setConsultasAuditoria(await resposta.json());
         } catch (error) { console.error("Erro auditoria:", error); }
     };
@@ -84,7 +84,7 @@ function ScientistDashboard() {
         if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.instrucao.trim()) return alert("Preencha todos os campos!");
 
         setSalvandoPrompt(true);
-        const url = promptEmEdicao ? `http://localhost:3000/api/cientista/prompts/${promptEmEdicao.id}` : 'http://localhost:3000/api/cientista/prompts';
+        const url = promptEmEdicao ? `https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts/${promptEmEdicao.id}` : 'https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts';
         const method = promptEmEdicao ? 'PUT' : 'POST';
 
         try {
@@ -101,7 +101,7 @@ function ScientistDashboard() {
     const excluirPrompt = async (id) => {
         if (!window.confirm("⚠️ Excluir este prompt permanentemente?")) return;
         try {
-            const resposta = await fetch(`http://localhost:3000/api/cientista/prompts/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+            const resposta = await fetch(`https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
             if (resposta.ok) { carregarPromptsDoBanco(); cancelarEdicao(); }
         } catch (error) { console.error(error); }
     };

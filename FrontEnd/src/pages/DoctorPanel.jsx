@@ -24,7 +24,7 @@ function DoctorPanel() {
 
     const buscarFilaDePacientes = async () => {
         try {
-            const resposta = await fetch('http://localhost:3000/api/medico/consultas', {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/medico/consultas', {
                 headers: getAuthHeaders()
             });
             if (resposta.ok) {
@@ -45,7 +45,7 @@ function DoctorPanel() {
         setLaudoFinal(consulta.laudoMedico || ''); 
 
         try {
-            const resposta = await fetch(`http://localhost:3000/api/medico/consultas/${consulta.id}`, {
+            const resposta = await fetch(`https://api.smartderm.37.27.81.229.sslip.io/api/medico/consultas/${consulta.id}`, {
                 headers: getAuthHeaders()
             });
 
@@ -92,7 +92,7 @@ function DoctorPanel() {
         setCarregando(true); 
 
         try {
-            const resposta = await fetch(`http://localhost:3000/api/medico/consultas/${consultaSelecionada.id}/laudo`, {
+            const resposta = await fetch(`https://api.smartderm.37.27.81.229.sslip.io/api/medico/consultas/${consultaSelecionada.id}/laudo`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify({ laudoMedico: laudoFinal })

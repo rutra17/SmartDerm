@@ -40,7 +40,7 @@ function AdminDashboard() {
         setCarregando(true);
         try {
             // 🌟 Atualizado para usar o getAuthHeaders()
-            const resposta = await fetch('http://localhost:3000/api/admin/listar-tudo', { 
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/admin/listar-tudo', { 
                 method: 'GET',
                 headers: getAuthHeaders() 
             });
@@ -66,7 +66,7 @@ function AdminDashboard() {
         setCriando(true);
         try {
             // 🌟 Atualizado para usar o getAuthHeaders()
-            const resposta = await fetch('http://localhost:3000/api/admin/criar-usuario', {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/admin/criar-usuario', {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(novoUsuario)
@@ -93,7 +93,7 @@ function AdminDashboard() {
 
         try {
             // 🌟 Atualizado para usar o getAuthHeaders()
-            const resposta = await fetch(`http://localhost:3000/api/admin/deletar/${tipo}/${id}`, {
+            const resposta = await fetch(`https://api.smartderm.37.27.81.229.sslip.io/api/admin/deletar/${tipo}/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders()
             });
