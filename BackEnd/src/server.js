@@ -56,5 +56,5 @@ app.use('/api/admin', adminRoutes);
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor rodando na porta ${PORT}`);
-    console.log(`📚 Documentação Swagger disponível em: http://localhost:${PORT}/api-docs`);
+    console.log(`📚 Documentação Swagger disponível em: https://api.smartderm.37.27.81.229.sslip.io/api-docs`);
 });
