@@ -19,7 +19,6 @@ services:
     build: ./BackEnd
     ports:
       - "3000:3000"
-    command: CMD ["sh", "-c", "npx prisma generate && npx prisma db push && node src/server.js"]
     environment:
       - PORT=3000
       - DATABASE_URL=postgresql://smartderm_user:SenhaForte2026@postgres:5432/smartderm_db
