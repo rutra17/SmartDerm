@@ -9,7 +9,7 @@ function ChatHeader({ selectedAI, setSelectedAI, selectedPrompt, setSelectedProm
 
     const carregarPrompts = async () => {
         try {
-            const resposta = await fetch('http://localhost:3000/api/prompts', {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/prompts', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
