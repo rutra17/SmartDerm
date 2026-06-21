@@ -9,6 +9,10 @@ export const swaggerDocument = {
   },
   servers: [
     {
+      url: 'https://api.smartderm.37.27.81.229.sslip.io',
+      description: 'Servidor de Produção',
+    },
+    {
       url: 'http://localhost:3001',
       description: 'Servidor Local (Desenvolvimento)',
     },
