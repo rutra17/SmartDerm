@@ -7,6 +7,7 @@ function Register() {
     // --- ESTADOS DA CONTA ---
     const [tipoConta, setTipoConta] = useState('paciente');
     const [identificador, setIdentificador] = useState('');
+    const [dadoExtra, setDadoExtra] = useState(''); // 🌟 NOVO: Guarda a Instituição do Cientista
     const [nomeCompleto, setNomeCompleto] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -103,27 +104,30 @@ function Register() {
 
         setLoading(true);
         let usernameFinal = "";
+        let dadoEspecificoFinal = ""; // 🌟 NOVO: Separa a lógica do que vai para a BD
 
         if (tipoConta === 'paciente') {
             const cpf = identificador.replace(/\D/g, '');
             if (cpf.length !== 11) { setErro("CPF incompleto!"); setLoading(false); return; }
             usernameFinal = cpf;
+            dadoEspecificoFinal = cpf;
         } else if (tipoConta === 'medico') {
             usernameFinal = identificador.replace(/\D/g, '');
+            dadoEspecificoFinal = identificador.replace(/\D/g, ''); // Para médicos, o Username é o CRM
         } else if (tipoConta === 'cientista') {
             usernameFinal = identificador.toLowerCase().replace(/\s/g, '_');
+            dadoEspecificoFinal = dadoExtra; // 🌟 NOVO: Envia a Instituição de forma independente!
         }
 
         const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}`;
 
-        // Pacote de dados atualizado com o E-mail real do estado
         const payload = {
             username: usernameFinal,
             senha: senha,
             nome: nomeCompleto,
-            email: email, // Agora enviamos o e-mail que o utilizador digitou
+            email: email,
             tipo: tipoConta,
-            dadoEspecifico: identificador,
+            dadoEspecifico: dadoEspecificoFinal, // ✅ Agora recebe o dado correto
             genero: genero,
             cep: cep,
             endereco: enderecoCompleto,
@@ -176,7 +180,7 @@ function Register() {
                             <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Tipo de Conta</label>
                             <select 
                                 value={tipoConta} 
-                                onChange={(e) => { setTipoConta(e.target.value); setIdentificador(''); setCodigoAutorizacao(''); }}
+                                onChange={(e) => { setTipoConta(e.target.value); setIdentificador(''); setDadoExtra(''); setCodigoAutorizacao(''); }}
                                 className="w-full bg-[#40414F] border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-emerald-500 transition"
                             >
                                 <option value="paciente">👤 Paciente</option>
@@ -199,7 +203,7 @@ function Register() {
                         ) : <div className="hidden md:block"></div>}
                     </div>
 
-                    {/* DADOS PESSOAIS - Modificado para incluir E-mail */}
+                    {/* DADOS PESSOAIS */}
                     <div>
                         <label className="block text-xs text-gray-400 mb-1 font-semibold uppercase">Nome Completo</label>
                         <input 
@@ -251,6 +255,18 @@ function Register() {
                             />
                         </div>
                     </div>
+
+                    {/* 🌟 CAMPO EXCLUSIVO PARA CIENTISTA */}
+                    {tipoConta === 'cientista' && (
+                        <div className="animate-fade-in mt-4">
+                            <label className="block text-xs text-purple-400 mb-1 font-semibold uppercase">Instituição de Pesquisa (Opcional)</label>
+                            <input 
+                                type="text" value={dadoExtra} onChange={(e) => setDadoExtra(e.target.value)} 
+                                placeholder="Ex: Universidade de Lisboa, FIOCRUZ..."
+                                className="w-full bg-[#40414F] border border-purple-500/50 rounded p-3 text-white focus:outline-none focus:border-purple-500"
+                            />
+                        </div>
+                    )}
 
                     <hr className="border-gray-700 my-4" />
                     

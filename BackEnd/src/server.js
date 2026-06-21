@@ -8,6 +8,7 @@ import doctorRoutes from './routes/doctorRoutes.js';
 import scientistRoutes from './routes/scientistRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { PrismaClient } from '@prisma/client';
+import { setupSwagger } from './config/swagger.js';
 import bcrypt from 'bcrypt';
 
 dotenv.config();
@@ -28,7 +29,6 @@ async function injetarAdminMestre() {
         });
         console.log("[DATABASE] Admin mestre garantido com sucesso no PostgreSQL!");
     } catch (error) {
-        // Se der erro porque já existe, apenas ignoramos em silêncio
         console.log("[DATABASE] Verificação de Admin concluída (Pronto para Login).");
     }
 }
@@ -38,9 +38,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors()); 
-app.use(express.json()); 
+app.use(express.json());
 
-// Rota de Teste (Health Check)
+setupSwagger(app);
+
 app.get('/', (req, res) => {
     res.json({ status: 'online', message: 'Servidor do SmartDem AI rodando com sucesso!' });
 });
@@ -55,4 +56,5 @@ app.use('/api/admin', adminRoutes);
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`📚 Documentação Swagger disponível em: http://localhost:${PORT}/api-docs`);
 });

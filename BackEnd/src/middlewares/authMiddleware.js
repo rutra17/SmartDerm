@@ -7,7 +7,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'ARTORIA';
 // Usado por Pacientes, Médicos e Cientistas. Não quebra nada.
 // ========================================================
 export const autenticar = (req, res, next) => {
-    // Pega o token do cabeçalho da requisição (ex: "Bearer eyJhbGciOi...")
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {

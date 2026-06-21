@@ -82,7 +82,6 @@ export const login = async (req, res) => {
             tipo = 'admin';
         }
 
-        // SÓ DEPOIS de procurar nos 4 é que damos erro se não encontrar ninguém
         if (!usuario) {
             return res.status(404).json({ erro: "Utilizador não encontrado." });
         }

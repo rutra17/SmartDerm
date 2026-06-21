@@ -209,7 +209,7 @@ function HomeGateway() {
                                 boxShadow: '0 10px 15px rgba(0,0,0,0.3)'
                             }}
                         >
-                            <span>👑</span> SysAdmin
+                            SysAdmin
                         </button>
                     </div>
                 </>
@@ -217,8 +217,7 @@ function HomeGateway() {
 
             {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
             {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
-            {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: bruno_admin")}
-            {/* 🌟 FORMULÁRIO DE LOGIN ESCONDIDO DO ADMINISTRADOR */}
+            {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: username_lastname")}
             {loginType === 'admin' && renderLoginForm("Acesso Supremo (SysAdmin)", "Nome de Usuário", "Ex: admin")}
         </div>
     );

@@ -74,7 +74,7 @@ export const salvarLaudo = async (req, res) => {
                 consultaId: id,
                 role: 'assistant',
                 texto: `🩺 **PARECER MÉDICO DEFINITIVO**\n\n${laudoMedico}\n\n*Assinado por: Dr(a). ${nomeDoMedico}*`,
-                ia_utilizada: 'Medico', // Ajuda a identificar que foi um humano
+                ia_utilizada: 'Medico',
                 prompt_utilizado: 'Laudo Final'
             }
         });

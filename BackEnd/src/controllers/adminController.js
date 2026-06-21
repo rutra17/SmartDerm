@@ -97,7 +97,7 @@ export const criarAdminMaster = async (req, res) => {
             data: { username, senha: senhaHash, nome }
         });
 
-        res.status(201).json({ sucesso: true, mensagem: "Super Admin criado!", admin: novoAdmin });
+        res.status(201).json({ sucesso: true, mensagem: "Admin criado!", admin: novoAdmin });
     } catch (error) {
         console.error("Erro ao criar Admin:", error);
         res.status(500).json({ erro: "Erro ao criar Admin. O username já existe?" });
