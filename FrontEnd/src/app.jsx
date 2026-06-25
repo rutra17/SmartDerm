@@ -165,8 +165,8 @@ function HomeGateway() {
     );
 
     return (
-        <div className="min-h-screen bg-[#202123] flex flex-col items-center justify-center text-white p-4 relative">
-            <h1 className="text-4xl font-bold text-emerald-500 mb-2">SmartDerm AI</h1>
+        <div className="min-h-screen bg-smart-blue flex flex-col items-center justify-center text-white p-4 relative">
+            <h1 className="text-4xl font-bold text-smart-mint mb-2">SmartDerm AI</h1>
             <p className="text-gray-400 mb-10 text-center">Acesso restrito. Autentique-se para continuar.</p>
             
             {!loginType && (

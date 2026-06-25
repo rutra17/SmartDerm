@@ -1,30 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from '../assests/img/Smartderm.jfif';
+import logo from '../assets/img/Logo_WH.png';
 
 function Home() {
     const [step, setStep] = useState(0);
-
+{/* UseEffect melhorado */}
     useEffect(() => {
-        const timeouts = [];
+        let stepValue = 0;
 
-        const runAnimation = () => {
-            setStep(0);
+        const interval = setInterval(() => {
+            stepValue += 1;
+            setStep(stepValue);
 
-            timeouts.push(setTimeout(() => setStep(1), 800));
-            timeouts.push(setTimeout(() => setStep(2), 1600));
-            timeouts.push(setTimeout(() => setStep(3), 2400));
-            timeouts.push(setTimeout(() => setStep(4), 3200));
-            timeouts.push(setTimeout(() => setStep(5), 4200));
-            timeouts.push(setTimeout(() => setStep(6), 5500));
-        };
+            if(stepValue >= 6){
+                clearInterval(interval);
+            }
+        }, 800);
 
-        runAnimation();
-
-        return () => {
-            timeouts.forEach(t => clearTimeout(t));
-        };
+        return() => clearInterval(interval);
     }, []);
+
     return (
         <main
             className="min-h-screen bg-smart-blue text-white flex flex-col"
@@ -44,9 +39,9 @@ function Home() {
                         <img
                             src={logo}
                             alt="Logo SmartDerm AI"
-                            className="h-12 w-12 rounded-lg object-cover"
+                            className="h-16 w-30"
                         />
-
+                    {/* Ocultado devido a destaque na logo nova}
                         <div>
                             <h1 className="font-bold text-lg">
                                 SmartDerm AI
@@ -55,8 +50,8 @@ function Home() {
                                 Triagem dermatológica inteligente
                             </p>
                         </div>
+                    */}
                     </div>
-
                     <Link
                         to="/login"
                         className="bg-smart-teal hover:brightness-110 transition px-5 py-2.5 rounded-lg font-semibold"
@@ -72,7 +67,7 @@ function Home() {
                 className="flex-grow flex items-center py-20"
                 tabIndex={-1}
             >
-                <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+                <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-start">
 
                     {/* Texto */}
                     <div>
@@ -109,7 +104,7 @@ function Home() {
                                 href="#como-funciona"
                                 className="border border-white/20 hover:border-smart-mint hover:text-smart-mint transition px-7 py-3 rounded-lg"
                             >
-                                Como funciona
+                                Como funciona?
                             </a>
                         </div>
 
@@ -139,7 +134,7 @@ function Home() {
 
                     {/* Card demonstrativo animado */}
                     <div className="flex justify-center">
-                        <div className="relative w-full max-w-md bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden">
+                        <div className="relative w-full max-w-md bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden transition-all duration-700 ease-in-out">
 
                             <div className="absolute inset-0 bg-gradient-to-br from-smart-mint/5 via-transparent to-transparent pointer-events-none" />
 
@@ -221,14 +216,19 @@ function Home() {
                                 </div>
 
                                 {step >= 5 && (
-                                    <div className="rounded-xl border border-smart-mint/20 bg-smart-mint/10 p-3 animate-pulse">
+                                    <div className={`rounded-xl border border-smart-mint/20 bg-smart-mint/10 p-3 ${step === 5 ? 'animate-pulse' : ''}`}>
                                         <p className="text-sm text-smart-mint">
                                             ✓ Pré-relatório gerado pela IA
                                         </p>
                                     </div>
                                 )}
 
-                                {step >= 6 && (
+                                <div
+                                    className={`overflow-hidden transition-all duration-700 ease-in-out ${step >= 6
+                                        ? 'max-h-[320px] opacity-100 translate-y-0 mt-3'
+                                        : 'max-h-0 opacity-0 -translate-y-2 mt-0'
+                                        }`}
+                                >
                                     <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
                                         <p className="font-semibold text-green-300 mb-3">
                                             Laudo Médico
@@ -236,13 +236,13 @@ function Home() {
 
                                         <div className="text-sm text-gray-300 space-y-2">
                                             <p>
-                                                <strong>Parecer:</strong> Lesão pigmentada apresentando
-                                                assimetria discreta, bordas irregulares e variação de coloração.
+                                                <strong>Parecer:</strong> Lesão pigmentada apresentando assimetria
+                                                discreta, bordas irregulares e variação de coloração.
                                             </p>
 
                                             <p>
-                                                <strong>Conclusão:</strong> Achados compatíveis com lesão
-                                                melanocítica que requer acompanhamento clínico.
+                                                <strong>Conclusão:</strong> Achados compatíveis com lesão melanocítica
+                                                que requer acompanhamento clínico.
                                             </p>
 
                                             <p>
@@ -250,7 +250,8 @@ function Home() {
                                             </p>
                                         </div>
                                     </div>
-                                )}                             </div>
+                                </div>
+                            </div>
 
                             <div className="mt-8">
                                 <div className="flex justify-between text-sm mb-2">
@@ -302,7 +303,7 @@ function Home() {
             >
                 <div className="max-w-7xl mx-auto px-6">
                     <h2 className="text-4xl font-bold text-center mb-4">
-                        Como funciona
+                        Como funciona?
                     </h2>
 
                     <p className="text-center text-gray-300 max-w-2xl mx-auto mb-16">
