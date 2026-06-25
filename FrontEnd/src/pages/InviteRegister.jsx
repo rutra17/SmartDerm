@@ -34,7 +34,7 @@ function InviteRegister() {
                     tipo: 'paciente'
                 }));
 
-                toast.success('✅ Conta criada com sucesso! Bem-vindo ao SmartDerm.');
+                toast.success('Conta criada com sucesso! Bem-vindo ao SmartDerm.');
                 
                 // 🌟 CORREÇÃO: Redireciona para '/paciente' (o nome correto da sua rota no app.jsx)
                 navigate('/paciente');

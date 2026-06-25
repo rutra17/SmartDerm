@@ -102,7 +102,7 @@ function DoctorPanel() {
             if (resposta.ok) {
                 // Atualizamos o estado localmente
                 setConsultaSelecionada(prev => ({...prev, status: 'finalizada', laudoMedico: laudoFinal}));
-                toast.success(`✅ Laudo guardado/atualizado com sucesso!`);
+                toast.success(`Laudo guardado/atualizado com sucesso!`);
                 buscarFilaDePacientes(); // Atualiza a barra lateral
             } else {
                 toast.error("Ocorreu um erro ao guardar o laudo no servidor.");

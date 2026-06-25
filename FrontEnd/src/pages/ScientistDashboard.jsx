@@ -91,7 +91,7 @@ function ScientistDashboard() {
         try {
             const resposta = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify(novoPrompt) });
             if (resposta.ok) {
-                toast.success("✅ Prompt salvo com sucesso!");
+                toast.success("Prompt salvo com sucesso!");
                 cancelarEdicao();
                 carregarPromptsDoBanco();
             }

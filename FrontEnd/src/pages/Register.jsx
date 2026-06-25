@@ -128,7 +128,7 @@ function Register() {
             nome: nomeCompleto,
             email: email,
             tipo: tipoConta,
-            dadoEspecifico: dadoEspecificoFinal, // ✅ Agora recebe o dado correto
+            dadoEspecifico: dadoEspecificoFinal,
             genero: genero,
             cep: cep,
             endereco: enderecoCompleto,
@@ -150,7 +150,7 @@ function Register() {
                 return;
             }
 
-            toast.success(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso!`);
+            toast.success(`Conta de ${tipoConta.toUpperCase()} criada com sucesso!`);
             navigate('/');
             
         } catch (error) {

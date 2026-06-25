@@ -121,7 +121,7 @@ function AdminDashboard() {
                 const linkCorreto = `${window.location.origin}/convite/${responseData.token}`;
                 
                 navigator.clipboard.writeText(linkCorreto);
-                toast.success(`✅ Convite gerado e copiado para a sua área de transferência!\n\nLink: ${linkCorreto}\n(Expira em 24h)`);
+                toast.success(`Convite gerado e copiado para a sua área de transferência!\n\nLink: ${linkCorreto}\n(Expira em 24h)`);
             } else {
                 toast.error(responseData.erro || "Erro ao gerar convite.");
             }
