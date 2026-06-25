@@ -99,6 +99,15 @@ export const login = async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        if (tipoEncontrado !== 'admin') { // O Admin mestre não precisa de rastreio
+            await prisma[tipoEncontrado].update({
+                where: { id: usuarioEncontrado.id },
+                data: { isOnline: true, ultimoLogin: new Date() }
+            });
+        }
+
+        res.json({ token, usuario: { nome: usuarioEncontrado.nome, tipo: tipoEncontrado } });
+
         res.status(200).json({
             mensagem: "Login realizado com sucesso!",
             token,
@@ -108,5 +117,70 @@ export const login = async (req, res) => {
     } catch (error) {
         console.error("Erro no login:", error);
         res.status(500).json({ erro: "Erro interno no servidor ao fazer login." });
+    }
+};
+
+export const logout = async (req, res) => {
+    try {
+        const { id, tipo } = req.usuario; // Vem do token validado
+        
+        if (tipo !== 'admin') {
+            await prisma[tipo].update({
+                where: { id },
+                data: { isOnline: false, ultimoLogout: new Date() }
+            });
+        }
+        res.json({ sucesso: true, mensagem: "Sessão encerrada." });
+    } catch (error) {
+        res.status(500).json({ erro: "Erro ao encerrar sessão." });
+    }
+};
+
+export const registrarPorConvite = async (req, res) => {
+    const { token, nome, medicoId } = req.body;
+
+    try {
+        const convite = await prisma.convite.findUnique({ where: { token } });
+
+        if (!convite || convite.usado || new Date() > convite.expiraEm) {
+            return res.status(400).json({ erro: "Convite inválido ou expirado." });
+        }
+
+        // Auto-gera dados obrigatórios que o paciente não preencheu
+        const usernameGerado = `pac_${Date.now().toString().slice(-6)}`;
+        const senhaHash = await bcrypt.hash('smartderm123', 10);
+        const emailGerado = `${usernameGerado}@smartderm.local`;
+
+        const novoPaciente = await prisma.paciente.create({
+            data: {
+                nome,
+                username: usernameGerado,
+                senha: senhaHash,
+                email: emailGerado,
+                isOnline: true,
+                ultimoLogin: new Date()
+            }
+        });
+
+        // Se ele escolheu um médico, criamos logo uma Consulta/Triagem inicial!
+        if (medicoId) {
+            await prisma.consulta.create({
+                data: { pacienteId: novoPaciente.id, medicoId, status: "pendente" }
+            });
+        }
+
+        // Invalida o convite
+        await prisma.convite.update({ where: { id: convite.id }, data: { usado: true } });
+
+        // Gera token de login automático
+        const jwtToken = jwt.sign(
+            { id: novoPaciente.id, tipo: 'paciente' }, 
+            process.env.JWT_SECRET || 'chave_super_secreta', 
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({ sucesso: true, token: jwtToken, paciente: novoPaciente });
+    } catch (error) {
+        res.status(500).json({ erro: "Erro ao registar paciente." });
     }
 };
