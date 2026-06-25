@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function InviteRegister() {
     const { token } = useParams(); // Pega o token gigante da URL
@@ -33,15 +34,15 @@ function InviteRegister() {
                     tipo: 'paciente'
                 }));
 
-                alert('✅ Conta criada com sucesso! Bem-vindo ao SmartDerm.');
+                toast.success('✅ Conta criada com sucesso! Bem-vindo ao SmartDerm.');
                 
                 // 🌟 CORREÇÃO: Redireciona para '/paciente' (o nome correto da sua rota no app.jsx)
                 navigate('/paciente');
             } else {
-                setErro(`${dados.erro || "Erro ao processar o convite."}`);
+                toast.error(`${dados.erro || "Erro ao processar o convite."}`);
             }
         } catch (error) {
-            setErro("Erro de conexão com o servidor.");
+            toast.error("Erro de conexão com o servidor.");
         }
         setLoading(false);
     };

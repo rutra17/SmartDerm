@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 // Importações dos Componentes
 import Sidebar from '../components/Sidebar';
@@ -165,7 +166,7 @@ function PatientChat() {
     const handleSend = async (e) => {
         e.preventDefault();
         if (!input.trim() && !imageFile) return;
-        if (!consultaId) return alert("Por favor, inicie uma nova consulta primeiro!");
+        if (!consultaId) return toast.error("Por favor, inicie uma nova consulta primeiro!");
         
         const textToSend = input.trim() ? input : "Imagem enviada para triagem.";
         const newMsg = { id: Date.now(), role: 'user', text: textToSend, image: imagePreview };

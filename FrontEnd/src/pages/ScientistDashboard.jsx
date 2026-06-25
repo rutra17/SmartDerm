@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import toast from 'react-hot-toast';
 
 function ScientistDashboard() {
     const [carregando, setCarregando] = useState(true);
@@ -81,7 +82,7 @@ function ScientistDashboard() {
 
     const salvarOuAtualizarPrompt = async (e) => {
         e.preventDefault();
-        if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.instrucao.trim()) return alert("Preencha todos os campos!");
+        if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.instrucao.trim()) return toast.error("Preencha todos os campos!");
 
         setSalvandoPrompt(true);
         const url = promptEmEdicao ? `https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts/${promptEmEdicao.id}` : 'https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts';
@@ -90,7 +91,7 @@ function ScientistDashboard() {
         try {
             const resposta = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify(novoPrompt) });
             if (resposta.ok) {
-                alert("✅ Prompt salvo com sucesso!");
+                toast.success("✅ Prompt salvo com sucesso!");
                 cancelarEdicao();
                 carregarPromptsDoBanco();
             }

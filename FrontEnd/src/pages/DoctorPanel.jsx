@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import toast from 'react-hot-toast';
 import '../components/ChatMarkdown.css';
 
 function DoctorPanel() {
@@ -85,7 +86,7 @@ function DoctorPanel() {
 
     const guardarLaudoMedico = async () => {
         if (!laudoFinal.trim()) {
-            alert("Por favor, escreva um parecer médico antes de guardar.");
+            toast.error("Por favor, escreva um parecer médico antes de guardar.");
             return;
         }
 
@@ -101,14 +102,14 @@ function DoctorPanel() {
             if (resposta.ok) {
                 // Atualizamos o estado localmente
                 setConsultaSelecionada(prev => ({...prev, status: 'finalizada', laudoMedico: laudoFinal}));
-                alert(`✅ Laudo guardado/atualizado com sucesso!`);
+                toast.success(`✅ Laudo guardado/atualizado com sucesso!`);
                 buscarFilaDePacientes(); // Atualiza a barra lateral
             } else {
-                alert("Ocorreu um erro ao guardar o laudo no servidor.");
+                toast.error("Ocorreu um erro ao guardar o laudo no servidor.");
             }
         } catch (error) {
             console.error("Erro ao guardar o laudo:", error);
-            alert("Erro de comunicação com a base de dados.");
+            toast.error("Erro de comunicação com a base de dados.");
         }
 
         setCarregando(false);

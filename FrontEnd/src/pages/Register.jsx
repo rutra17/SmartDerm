@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function Register() {
     const navigate = useNavigate();
@@ -149,7 +150,7 @@ function Register() {
                 return;
             }
 
-            alert(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso!`);
+            toast.success(`✅ Conta de ${tipoConta.toUpperCase()} criada com sucesso!`);
             navigate('/');
             
         } catch (error) {

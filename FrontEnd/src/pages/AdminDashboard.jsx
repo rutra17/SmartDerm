@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 function AdminDashboard() {
     const [abaAtiva, setAbaAtiva] = useState('resumo');
@@ -59,7 +60,7 @@ function AdminDashboard() {
     const handleCriarUsuario = async (e) => {
         e.preventDefault();
         if (!novoUsuario.username || !novoUsuario.senha || !novoUsuario.nome || !novoUsuario.extra) {
-            return alert("Preencha todos os campos obrigatórios!");
+            return toast.error("Preencha todos os campos obrigatórios!");
         }
 
         setCriando(true);
@@ -71,12 +72,12 @@ function AdminDashboard() {
             });
 
             if (resposta.ok) {
-                alert(`${novoUsuario.tipo.toUpperCase()} criado com sucesso!`);
+                toast.success(`${novoUsuario.tipo.toUpperCase()} criado com sucesso!`);
                 setNovoUsuario({ ...novoUsuario, username: '', senha: '', nome: '', email: '', extra: '' });
                 carregarTudo(); // Atualiza as listas
             } else {
                 const erro = await resposta.json();
-                alert(erro.erro || "Erro ao criar utilizador.");
+                toast.error(erro.erro || "Erro ao criar utilizador.");
             }
         } catch (error) {
             console.error("Erro:", error);
@@ -99,7 +100,7 @@ function AdminDashboard() {
                 carregarTudo(); // Atualiza a tela
             } else {
                 const erro = await resposta.json();
-                alert(erro.erro || "Erro ao apagar.");
+                toast.error(erro.erro || "Erro ao apagar.");
             }
         } catch (error) {
             console.error("Erro ao deletar:", error);
@@ -120,13 +121,13 @@ function AdminDashboard() {
                 const linkCorreto = `${window.location.origin}/convite/${responseData.token}`;
                 
                 navigator.clipboard.writeText(linkCorreto);
-                alert(`✅ Convite gerado e copiado para a sua área de transferência!\n\nLink: ${linkCorreto}\n(Expira em 24h)`);
+                toast.success(`✅ Convite gerado e copiado para a sua área de transferência!\n\nLink: ${linkCorreto}\n(Expira em 24h)`);
             } else {
-                alert(responseData.erro || "Erro ao gerar convite.");
+                toast.error(responseData.erro || "Erro ao gerar convite.");
             }
         } catch (error) {
             console.error("Erro:", error);
-            alert("Erro ao conectar com o servidor para gerar convite.");
+            toast.error("Erro ao conectar com o servidor para gerar convite.");
         }
     };
 
@@ -240,7 +241,6 @@ function AdminDashboard() {
                                     </table>
                                 </div>
                             )}
-
                             {/* ABA: MÉDICOS (Com formulário de criação) */}
                             {abaAtiva === 'medicos' && (
                                 <div className="space-y-8">
