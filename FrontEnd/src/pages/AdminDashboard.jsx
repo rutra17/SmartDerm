@@ -116,8 +116,11 @@ function AdminDashboard() {
             const responseData = await resposta.json();
             
             if (resposta.ok) {
-                navigator.clipboard.writeText(responseData.link);
-                alert(`✅ Convite gerado e copiado para a sua área de transferência!\n\nLink: ${responseData.link}\n(Expira em 24h)`);
+                // 🌟 O SEGREDO ESTÁ AQUI: window.location.origin pega o endereço exato de onde o SysAdmin está aceder
+                const linkCorreto = `${window.location.origin}/convite/${responseData.token}`;
+                
+                navigator.clipboard.writeText(linkCorreto);
+                alert(`✅ Convite gerado e copiado para a sua área de transferência!\n\nLink: ${linkCorreto}\n(Expira em 24h)`);
             } else {
                 alert(responseData.erro || "Erro ao gerar convite.");
             }

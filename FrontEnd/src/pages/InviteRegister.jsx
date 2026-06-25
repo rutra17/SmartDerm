@@ -28,7 +28,7 @@ function InviteRegister() {
                 // Guarda o token de sessão e entra direto!
                 localStorage.setItem('token', dados.token);
                 alert('Conta criada com sucesso! Bem-vindo ao SmartDerm.');
-                navigate('/patient'); // Mude para a rota do dashboard do paciente se for diferente
+                navigate('/paciente'); // Mude para a rota do dashboard do paciente se for diferente
             } else {
                 setErro(`${dados.erro || "Erro ao processar o convite."}`);
             }
