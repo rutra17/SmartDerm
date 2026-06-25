@@ -221,7 +221,7 @@ function HomeGateway() {
             {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
             {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
             {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: username_lastname")}
-            {loginType === 'admin' && renderLoginForm("Acesso Supremo (SysAdmin)", "Nome de Usuário", "Ex: admin")}
+            {loginType === 'admin' && renderLoginForm("Acesso Admin (SysAdmin)", "Nome de Usuário", "Ex: admin")}
         </div>
     );
 }
