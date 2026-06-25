@@ -39,7 +39,6 @@ function AdminDashboard() {
     const carregarTudo = async () => {
         setCarregando(true);
         try {
-            // 🌟 Atualizado para usar o getAuthHeaders()
             const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/admin/listar-tudo', { 
                 method: 'GET',
                 headers: getAuthHeaders() 
@@ -65,7 +64,6 @@ function AdminDashboard() {
 
         setCriando(true);
         try {
-            // 🌟 Atualizado para usar o getAuthHeaders()
             const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/admin/criar-usuario', {
                 method: 'POST',
                 headers: getAuthHeaders(),
@@ -73,7 +71,7 @@ function AdminDashboard() {
             });
 
             if (resposta.ok) {
-                alert(`✅ ${novoUsuario.tipo.toUpperCase()} criado com sucesso!`);
+                alert(`${novoUsuario.tipo.toUpperCase()} criado com sucesso!`);
                 setNovoUsuario({ ...novoUsuario, username: '', senha: '', nome: '', email: '', extra: '' });
                 carregarTudo(); // Atualiza as listas
             } else {
@@ -87,12 +85,11 @@ function AdminDashboard() {
     };
 
     const handleDeletar = async (tipo, id, nome) => {
-        if (!window.confirm(`⚠️ ATENÇÃO: Tem a certeza absoluta que deseja apagar o ${tipo} "${nome}"? Esta ação não pode ser desfeita e apagará todos os dados dependentes!`)) {
+        if (!window.confirm(`ATENÇÃO: Tem a certeza absoluta que deseja apagar o ${tipo} "${nome}"? Esta ação não pode ser desfeita e apagará todos os dados dependentes!`)) {
             return;
         }
 
         try {
-            // 🌟 Atualizado para usar o getAuthHeaders()
             const resposta = await fetch(`https://api.smartderm.37.27.81.229.sslip.io/api/admin/deletar/${tipo}/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders()
@@ -109,6 +106,27 @@ function AdminDashboard() {
         }
     };
 
+    // 🌟 NOVA FUNÇÃO: Gerar link de convite rápido
+    const gerarConviteLink = async () => {
+        try {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/admin/gerar-convite', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+            const responseData = await resposta.json();
+            
+            if (resposta.ok) {
+                navigator.clipboard.writeText(responseData.link);
+                alert(`✅ Convite gerado e copiado para a sua área de transferência!\n\nLink: ${responseData.link}\n(Expira em 24h)`);
+            } else {
+                alert(responseData.erro || "Erro ao gerar convite.");
+            }
+        } catch (error) {
+            console.error("Erro:", error);
+            alert("Erro ao conectar com o servidor para gerar convite.");
+        }
+    };
+
     return (
         <div className="flex h-screen w-full bg-[#343541] font-sans text-gray-100">
             
@@ -116,7 +134,7 @@ function AdminDashboard() {
             <div className="w-64 flex-shrink-0 bg-[#1a1b20] border-r border-red-900/50 flex flex-col shadow-2xl z-10">
                 <div className="p-6 border-b border-red-900/50 bg-red-950/20">
                     <h2 className="text-xl font-black text-red-500 flex items-center gap-2">
-                        <span>👑</span> SysAdmin
+                        SysAdmin
                     </h2>
                     <p className="text-xs text-red-400/70 mt-1 uppercase tracking-widest">Acesso Absoluto</p>
                 </div>
@@ -141,9 +159,15 @@ function AdminDashboard() {
                             <h1 className="text-4xl font-black text-white mb-2">Controle Mestre</h1>
                             <p className="text-gray-400">Gestão global de utilizadores, equipa médica e base de dados.</p>
                         </div>
-                        <button onClick={carregarTudo} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded shadow transition flex gap-2 items-center text-sm font-bold">
-                            <span>🔄</span> Sincronizar Banco
-                        </button>
+                        {/* 🌟 Botões atualizados com Gerar Convite */}
+                        <div className="flex gap-4">
+                            <button onClick={gerarConviteLink} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded shadow transition flex gap-2 items-center text-sm font-bold">
+                                <span>✉️</span> Gerar Convite Rápido
+                            </button>
+                            <button onClick={carregarTudo} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded shadow transition flex gap-2 items-center text-sm font-bold">
+                                <span>🔄</span> Sincronizar Banco
+                            </button>
+                        </div>
                     </header>
 
                     {carregando ? (
@@ -182,6 +206,9 @@ function AdminDashboard() {
                                                 <th className="px-4 py-3">ID</th>
                                                 <th className="px-4 py-3">Nome</th>
                                                 <th className="px-4 py-3">Username</th>
+                                                {/* 🌟 Novas colunas de Status */}
+                                                <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3">Último Login</th>
                                                 <th className="px-4 py-3">Data de Registo</th>
                                                 <th className="px-4 py-3 text-right">Ação</th>
                                             </tr>
@@ -192,7 +219,15 @@ function AdminDashboard() {
                                                     <td className="px-4 py-3 font-mono text-xs">{p.id.substring(0,8)}</td>
                                                     <td className="px-4 py-3 font-bold text-white">{p.nome}</td>
                                                     <td className="px-4 py-3 text-blue-400">@{p.username}</td>
-                                                    <td className="px-4 py-3">{new Date(p.criadoEm).toLocaleDateString()}</td>
+                                                    {/* 🌟 Bolinha de status online/offline */}
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase flex items-center gap-1 w-fit ${p.isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                            <span className={`w-2 h-2 rounded-full ${p.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`}></span>
+                                                            {p.isOnline ? 'Online' : 'Offline'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-gray-400">{p.ultimoLogin ? new Date(p.ultimoLogin).toLocaleString('pt-BR') : 'Nunca'}</td>
+                                                    <td className="px-4 py-3">{new Date(p.criadoEm).toLocaleDateString('pt-BR')}</td>
                                                     <td className="px-4 py-3 text-right">
                                                         <button onClick={() => handleDeletar('paciente', p.id, p.nome)} className="px-3 py-1 bg-red-900/30 hover:bg-red-600 text-red-500 hover:text-white rounded transition text-xs font-bold">Apagar</button>
                                                     </td>
@@ -225,6 +260,9 @@ function AdminDashboard() {
                                                     <th className="px-4 py-3">CRM</th>
                                                     <th className="px-4 py-3">Nome do Médico</th>
                                                     <th className="px-4 py-3">Username</th>
+                                                    {/* 🌟 Novas colunas de Status */}
+                                                    <th className="px-4 py-3">Status</th>
+                                                    <th className="px-4 py-3">Último Login</th>
                                                     <th className="px-4 py-3 text-right">Ação</th>
                                                 </tr>
                                             </thead>
@@ -234,6 +272,14 @@ function AdminDashboard() {
                                                         <td className="px-4 py-3 font-mono font-bold text-emerald-400">{m.crm}</td>
                                                         <td className="px-4 py-3 font-bold text-white">Dr(a). {m.nome}</td>
                                                         <td className="px-4 py-3 text-gray-400">@{m.username}</td>
+                                                        {/* 🌟 Bolinha de status online/offline */}
+                                                        <td className="px-4 py-3">
+                                                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase flex items-center gap-1 w-fit ${m.isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                                <span className={`w-2 h-2 rounded-full ${m.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`}></span>
+                                                                {m.isOnline ? 'Online' : 'Offline'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-gray-400">{m.ultimoLogin ? new Date(m.ultimoLogin).toLocaleString('pt-BR') : 'Nunca'}</td>
                                                         <td className="px-4 py-3 text-right">
                                                             <button onClick={() => handleDeletar('medico', m.id, m.nome)} className="px-3 py-1 bg-red-900/30 hover:bg-red-600 text-red-500 hover:text-white rounded transition text-xs font-bold">Apagar</button>
                                                         </td>
@@ -267,6 +313,9 @@ function AdminDashboard() {
                                                     <th className="px-4 py-3">Instituição</th>
                                                     <th className="px-4 py-3">Nome</th>
                                                     <th className="px-4 py-3">Username</th>
+                                                    {/* 🌟 Novas colunas de Status */}
+                                                    <th className="px-4 py-3">Status</th>
+                                                    <th className="px-4 py-3">Último Login</th>
                                                     <th className="px-4 py-3 text-right">Ação</th>
                                                 </tr>
                                             </thead>
@@ -276,6 +325,14 @@ function AdminDashboard() {
                                                         <td className="px-4 py-3 font-mono text-purple-400">{c.instituicao || 'N/A'}</td>
                                                         <td className="px-4 py-3 font-bold text-white">{c.nome}</td>
                                                         <td className="px-4 py-3 text-gray-400">@{c.username}</td>
+                                                        {/* 🌟 Bolinha de status online/offline */}
+                                                        <td className="px-4 py-3">
+                                                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase flex items-center gap-1 w-fit ${c.isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                                <span className={`w-2 h-2 rounded-full ${c.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`}></span>
+                                                                {c.isOnline ? 'Online' : 'Offline'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-gray-400">{c.ultimoLogin ? new Date(c.ultimoLogin).toLocaleString('pt-BR') : 'Nunca'}</td>
                                                         <td className="px-4 py-3 text-right">
                                                             <button onClick={() => handleDeletar('cientista', c.id, c.nome)} className="px-3 py-1 bg-red-900/30 hover:bg-red-600 text-red-500 hover:text-white rounded transition text-xs font-bold">Apagar</button>
                                                         </td>

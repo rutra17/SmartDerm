@@ -114,7 +114,14 @@ function DoctorPanel() {
         setCarregando(false);
     };
 
-    const fazerLogout = () => {
+    const fazerLogout = async () => {
+        try {
+            await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/auth/logout', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+        } catch (e) { console.error("Erro ao sair:", e); }
+        
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
         window.location.replace('/'); 

@@ -181,7 +181,7 @@ function PatientChat() {
         if (imageFile) formData.append('imagem', imageFile);
 
         try {
-            const resposta = await fetch('http://localhost:3000/api/chat/enviar', {
+            const resposta = await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/chat/enviar', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
                 body: formData
@@ -207,7 +207,14 @@ function PatientChat() {
         setImagePreview(null);
     };
 
-    const fazerLogout = () => {
+    const fazerLogout = async () => {
+        try {
+            await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/auth/logout', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+        } catch (e) { console.error("Erro ao sair:", e); }
+
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
         navigate('/'); 

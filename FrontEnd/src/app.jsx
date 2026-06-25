@@ -9,6 +9,7 @@ import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
+import InviteRegister from './pages/InviteRegister';
 
 // Importação do Componente de Segurança
 import ProtectedRoute from './components/ProtectedRoute'; 
@@ -234,6 +235,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} /> 
+                <Route path="/convite/:token" element={<InviteRegister />} />
                 
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>
