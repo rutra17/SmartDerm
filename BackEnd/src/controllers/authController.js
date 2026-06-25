@@ -99,9 +99,9 @@ export const login = async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        if (tipoEncontrado !== 'admin') { // O Admin mestre não precisa de rastreio
-            await prisma[tipoEncontrado].update({
-                where: { id: usuarioEncontrado.id },
+        if (tipo !== 'admin') { // O Admin mestre não precisa de rastreio
+            await prisma[tipo].update({
+                where: { id: usuario.id },
                 data: { isOnline: true, ultimoLogin: new Date() }
             });
         }
