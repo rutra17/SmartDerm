@@ -22,6 +22,9 @@ model Paciente {
   referencia String?
   cpf        String?    @unique // Exemplo de campo específico
   criadoEm   DateTime   @default(now())
+  isOnline     Boolean   @default(false)
+  ultimoLogin  DateTime?
+  ultimoLogout DateTime?
   
   consultas  Consulta[]
 }
@@ -41,6 +44,9 @@ model Medico {
   referencia String?
   crm        String     @unique // Campo obrigatório e específico para médicos
   criadoEm   DateTime   @default(now())
+  isOnline     Boolean   @default(false)
+  ultimoLogin  DateTime?
+  ultimoLogout DateTime?
   
   laudos     Consulta[] // Consultas que este médico analisou
 }
@@ -60,10 +66,13 @@ model Cientista {
   referencia  String?
   instituicao String?    // Campo específico para cientistas/pesquisadores
   criadoEm    DateTime   @default(now())
+  isOnline     Boolean   @default(false)
+  ultimoLogin  DateTime?
+  ultimoLogout DateTime?
 }
 
 // ==========================================
-// TABELA DO CIENTISTA DE DADOS
+// TABELA DO CIENTISTA DE DADOS (PROMPT)
 // ==========================================
 model Prompt {
   id           String   @id @default(uuid())
@@ -120,4 +129,15 @@ model Admin {
   senha     String
   nome      String
   criadoEm  DateTime @default(now())
+}
+
+// ==========================================
+// 7. TABELA DE CONVITES USUÁRIOS
+// ==========================================
+model Convite {
+  id        String   @id @default(uuid())
+  token     String   @unique @default(uuid())
+  usado     Boolean  @default(false)
+  criadoEm  DateTime @default(now())
+  expiraEm  DateTime
 }

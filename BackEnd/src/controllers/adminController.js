@@ -103,3 +103,22 @@ export const criarAdminMaster = async (req, res) => {
         res.status(500).json({ erro: "Erro ao criar Admin. O username já existe?" });
     }
 };
+
+export const gerarConvite = async (req, res) => {
+    try {
+        // Convite expira em 24 horas
+        const expiraEm = new Date();
+        expiraEm.setHours(expiraEm.getHours() + 24);
+
+        const convite = await prisma.convite.create({
+            data: { expiraEm }
+        });
+
+        // O link que o Admin vai copiar
+        const linkConvite = `https://api.smartderm.37.27.81.229.sslip.io/convite/${convite.token}`;
+        
+        res.status(201).json({ sucesso: true, link: linkConvite, token: convite.token });
+    } catch (error) {
+        res.status(500).json({ erro: "Erro ao gerar convite." });
+    }
+};

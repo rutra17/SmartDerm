@@ -8,7 +8,6 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const analisarImagemComGemini = async (imageBuffer, mimeType, promptUsuario) => {
     try {
-        // Utilizamos o modelo gemini-1.5-flash, que é rápido e excelente para visão computacional
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         // O Gemini exige que a imagem seja convertida para Base64 antes de ser enviada para a API

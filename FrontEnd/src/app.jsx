@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Importação das suas páginas
 import Home from './pages/Home';
@@ -9,6 +10,7 @@ import DoctorPanel from './pages/DoctorPanel';
 import ScientistDashboard from './pages/ScientistDashboard';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
+import InviteRegister from './pages/InviteRegister';
 
 // Importação do Componente de Segurança
 import ProtectedRoute from './components/ProtectedRoute'; 
@@ -219,7 +221,7 @@ function HomeGateway() {
             {loginType === 'paciente' && renderLoginForm("Login do Paciente", "CPF (Apenas números válidos)", "000.000.000-00")}
             {loginType === 'medico' && renderLoginForm("Portal Médico", "Registro CRN/CRM", "Ex: 12345")}
             {loginType === 'cientista' && renderLoginForm("Painel do Analista", "Nome de Usuário", "Ex: username_lastname")}
-            {loginType === 'admin' && renderLoginForm("Acesso Supremo (SysAdmin)", "Nome de Usuário", "Ex: admin")}
+            {loginType === 'admin' && renderLoginForm("Acesso Admin (SysAdmin)", "Nome de Usuário", "Ex: admin")}
         </div>
     );
 }
@@ -230,10 +232,20 @@ function HomeGateway() {
 function App() {
     return (
         <BrowserRouter>
+            <Toaster 
+                position="top-right" 
+                toastOptions={{
+                    duration: 4000,
+                    style: { background: '#343541', color: '#fff', border: '1px solid #4b5563' },
+                    success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+                    error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+                }} 
+            />
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<HomeGateway />} />
                 <Route path="/cadastro" element={<Register />} /> 
+                <Route path="/convite/:token" element={<InviteRegister />} />
                 
                 <Route path="/paciente" element={
                     <ProtectedRoute allowedRoles={['paciente']}>

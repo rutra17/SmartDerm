@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import toast from 'react-hot-toast';
 
 function ScientistDashboard() {
     const [carregando, setCarregando] = useState(true);
@@ -81,7 +82,7 @@ function ScientistDashboard() {
 
     const salvarOuAtualizarPrompt = async (e) => {
         e.preventDefault();
-        if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.instrucao.trim()) return alert("Preencha todos os campos!");
+        if (!novoPrompt.titulo.trim() || !novoPrompt.chave.trim() || !novoPrompt.instrucao.trim()) return toast.error("Preencha todos os campos!");
 
         setSalvandoPrompt(true);
         const url = promptEmEdicao ? `https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts/${promptEmEdicao.id}` : 'https://api.smartderm.37.27.81.229.sslip.io/api/cientista/prompts';
@@ -90,7 +91,7 @@ function ScientistDashboard() {
         try {
             const resposta = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify(novoPrompt) });
             if (resposta.ok) {
-                alert("✅ Prompt salvo com sucesso!");
+                toast.success("Prompt salvo com sucesso!");
                 cancelarEdicao();
                 carregarPromptsDoBanco();
             }
@@ -117,6 +118,18 @@ function ScientistDashboard() {
         return { modelo, quantidade, precoPorChamada, custoDoModelo };
     });
     const custoMedioPorPaciente = estatisticas.totalConsultas > 0 ? (custoTotalEstimado / estatisticas.totalConsultas) : 0;
+    
+    const fazerLogout = async () => {
+        try {
+            await fetch('https://api.smartderm.37.27.81.229.sslip.io/api/auth/logout', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+        } catch (e) { console.error("Erro ao sair:", e); }
+
+        localStorage.clear();
+        window.location.replace('/');
+    };
 
     return (
         <div className="flex h-screen w-full bg-[#343541] font-sans text-gray-100">
@@ -134,7 +147,7 @@ function ScientistDashboard() {
                     <button onClick={() => { setAbaAtiva('auditoria'); carregarDadosAuditoria(); }} className={`w-full text-left p-3 rounded-lg border transition font-semibold ${abaAtiva === 'auditoria' ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'border-transparent text-gray-400 hover:bg-gray-700/50'}`}>🎯 Auditoria Clínica</button>
                 </div>
                 <div className="p-4 border-t border-white/10">
-                    <button onClick={() => { localStorage.clear(); window.location.replace('/'); }} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition">Sair do Portal</button>
+                    <button onClick={fazerLogout} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-semibold transition">Sair do Portal</button>
                 </div>
             </div>
 
