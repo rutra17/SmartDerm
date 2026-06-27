@@ -121,7 +121,7 @@ export const enviarMensagem = async (req, res) => {
             const nomeArquivo = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${extensao}`;
 
             await minioClient.putObject(BUCKET_NAME, nomeArquivo, imagem.buffer, imagem.size);
-            imagemUrl = `http://localhost:9000/${BUCKET_NAME}/${nomeArquivo}`;
+            imagemUrl = `https://r9c8afcgfedu1s2dwalcfnmh.37.27.81.229.sslip.io/${BUCKET_NAME}/${nomeArquivo}`;
 
             conteudoParaIA.push({
                 inlineData: {
