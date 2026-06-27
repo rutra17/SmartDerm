@@ -41,16 +41,6 @@ function Home() {
                             alt="Logo SmartDerm AI"
                             className="h-16 w-30"
                         />
-                    {/* Ocultado devido a destaque na logo nova}
-                        <div>
-                            <h1 className="font-bold text-lg">
-                                SmartDerm AI
-                            </h1>
-                            <p className="text-xs text-gray-300">
-                                Triagem dermatológica inteligente
-                            </p>
-                        </div>
-                    */}
                     </div>
                     <Link
                         to="/login"
